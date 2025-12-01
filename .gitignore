@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Build output
+.svelte-kit/
+build/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Firebase
+functions/node_modules/
+functions/lib/
+
+# Logs
+*.log
+npm-debug.log*
+
+

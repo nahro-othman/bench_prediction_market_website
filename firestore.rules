@@ -1,0 +1,113 @@
+rules_version = '2';
+
+/**
+ * Firestore Security Rules for Bench Prediction Market
+ * 
+ * These rules protect data access and ensure:
+ * 1. Users can only read/write their own profile
+ * 2. Only authenticated users can read markets and place bets
+ * 3. Only admin users can create/edit markets
+ * 4. Positions are created via Cloud Functions (not directly)
+ * 
+ * Note: Critical operations like placeBet and settleMarket
+ * are handled by Cloud Functions with additional validation.
+ */
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user owns the document
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Helper function to check if user is admin
+    // In production, use custom claims: request.auth.token.admin == true
+    // For MVP, we'll check against a list in the users collection or use custom claims
+    function isAdmin() {
+      return isAuthenticated() && (
+        // Option 1: Custom claim (set via Firebase Admin SDK)
+        request.auth.token.admin == true ||
+        // Option 2: Check a specific field in user document (less secure, for dev only)
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+    
+    // Users collection
+    // - Users can read and update their own profile
+    // - Balance updates should only happen via Cloud Functions
+    match /users/{userId} {
+      // Allow users to read their own profile
+      allow read: if isOwner(userId);
+      
+      // Allow creating own profile (on first sign-in)
+      allow create: if isOwner(userId) && 
+        request.resource.data.uid == userId &&
+        request.resource.data.balance == 1000; // Enforce starting balance
+      
+      // Allow updating own profile (except balance)
+      // Balance updates happen via Cloud Functions
+      allow update: if isOwner(userId) && 
+        request.resource.data.balance == resource.data.balance;
+    }
+    
+    // Markets collection
+    // - Anyone authenticated can read markets
+    // - Only admins can create/update/delete markets
+    match /markets/{marketId} {
+      // Anyone authenticated can read markets
+      allow read: if isAuthenticated();
+      
+      // Only admins can create markets
+      allow create: if isAdmin();
+      
+      // Only admins can update markets
+      allow update: if isAdmin();
+      
+      // Only admins can delete markets
+      allow delete: if isAdmin();
+      
+      // Options subcollection
+      match /options/{optionId} {
+        // Anyone authenticated can read options
+        allow read: if isAuthenticated();
+        
+        // Only admins can manage options
+        allow write: if isAdmin();
+      }
+    }
+    
+    // Positions collection
+    // - Users can read their own positions
+    // - Positions are created/updated only via Cloud Functions
+    // - We deny direct write access for security
+    match /positions/{positionId} {
+      // Users can read their own positions
+      allow read: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      
+      // List queries for user's own positions
+      allow list: if isAuthenticated();
+      
+      // Positions should only be created via Cloud Functions
+      // This prevents manipulation of bets
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+    
+    // Admins collection (simple admin list for MVP)
+    // In production, use Firebase Auth custom claims instead
+    match /admins/{adminId} {
+      allow read: if isAuthenticated();
+      // Only existing admins can add new admins
+      allow write: if isAdmin();
+    }
+  }
+}
+
+
