@@ -21,6 +21,7 @@ Thumbs.db
 # Firebase
 functions/node_modules/
 functions/lib/
+*-firebase-adminsdk-*.json
 
 # Logs
 *.log

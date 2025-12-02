@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "bench-firebase": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@cloudflare/mcp-server-firebase",
+        "./bench-prediction-market-firebase-adminsdk-fbsvc-783041869a.json"
+      ]
+    }
+  }
+}

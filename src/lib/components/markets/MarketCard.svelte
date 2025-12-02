@@ -32,73 +32,66 @@
 		market.status === 'open' && 
 		market.closeAt.toDate() > new Date()
 	);
+	
+	// Get top 2 options by probability
+	const topOptions = $derived(
+		[...market.options]
+			.sort((a, b) => b.probability - a.probability)
+			.slice(0, 2)
+	);
 </script>
 
-<article class="card hover:shadow-card-hover transition-shadow duration-200">
+<article class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden border border-surface-200">
 	<!-- Market header -->
-	<header class="mb-4">
+	<div class="p-5">
 		{#if showLink}
 			<a href="/markets/{market.id}" class="block group">
-				<h3 class="text-lg font-semibold text-surface-900 group-hover:text-brand-600 transition-colors">
+				<h3 class="text-lg font-bold text-surface-900 group-hover:text-brand-600 transition-colors mb-2">
 					{market.title}
 				</h3>
 			</a>
 		{:else}
-			<h3 class="text-lg font-semibold text-surface-900">
+			<h3 class="text-lg font-bold text-surface-900 mb-2">
 				{market.title}
 			</h3>
 		{/if}
-		
-		{#if market.description}
-			<p class="text-sm text-surface-500 mt-1 line-clamp-2">
-				{market.description}
-			</p>
-		{/if}
 
 		<!-- Market meta info -->
-		<div class="flex items-center space-x-4 mt-2 text-xs text-surface-400">
-			<span class="flex items-center space-x-1">
-				<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-				</svg>
-				<span>Closes {formatRelativeTime(market.closeAt)}</span>
-			</span>
-			<span class="px-2 py-0.5 rounded-full bg-surface-100 text-surface-600 capitalize">
-				{market.sport}
-			</span>
+		<div class="flex items-center gap-2 text-xs text-surface-500 mb-4">
+			<span>Closes {formatRelativeTime(market.closeAt)}</span>
+			<span>•</span>
+			<span class="capitalize">{market.sport}</span>
 			{#if !isOpen}
-				<span class="px-2 py-0.5 rounded-full bg-no-light text-no-dark font-medium">
-					{market.status === 'settled' ? 'Settled' : 'Closed'}
-				</span>
+				<span>•</span>
+				<span class="text-red-600 font-semibold">{market.status === 'settled' ? 'Settled' : 'Closed'}</span>
 			{/if}
 		</div>
-	</header>
 
-	<!-- Options list -->
-	<div class="divide-y divide-surface-100">
-		{#each market.options as option (option.id)}
-			<OptionRow 
-				{option} 
-				onBet={handleBet}
-				disabled={disabled || !isOpen}
-			/>
-		{/each}
-	</div>
+		<!-- Top 2 Options -->
+		<div class="space-y-2">
+			{#each topOptions as option, index (option.id)}
+				<OptionRow 
+					{option} 
+					onBet={handleBet}
+					disabled={disabled || !isOpen}
+					{index}
+				/>
+			{/each}
+		</div>
 
-	<!-- Optional footer link -->
-	{#if showLink}
-		<footer class="mt-4 pt-4 border-t border-surface-100">
+		<!-- View more link -->
+		{#if showLink && market.options.length > 2}
 			<a 
 				href="/markets/{market.id}" 
-				class="text-sm text-brand-600 hover:text-brand-700 font-medium flex items-center space-x-1"
+				class="inline-flex items-center mt-3 text-sm text-surface-600 hover:text-brand-600 font-medium group"
 			>
-				<span>View details</span>
-				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<span>+{market.options.length - 2} more options</span>
+				<svg class="w-3.5 h-3.5 ml-1 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
 				</svg>
 			</a>
-		</footer>
-	{/if}
+		{/if}
+	</div>
 </article>
 
 

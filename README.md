@@ -94,7 +94,7 @@ PUBLIC_FIREBASE_APP_ID=your-app-id
 
 ```bash
 firebase login
-firebase use your-project-id
+firebase use bench-prediction-market
 ```
 
 ### 3. Deploy Firestore Rules & Indexes
