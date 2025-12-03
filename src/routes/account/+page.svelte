@@ -1,16 +1,17 @@
 <!--
-  Account Page using SvelteFire
+  Account Page with Wallet Authentication
   
-  Uses SvelteFire's SignedIn, User, Doc, and Collection components
-  for reactive user data.
+  Shows user's wallet info and betting positions
 -->
 <script lang="ts">
-	import { SignedIn, SignedOut, User, Doc, Collection } from 'sveltefire';
+	import { Doc, Collection } from 'sveltefire';
 	import { collection, query, where, orderBy } from 'firebase/firestore';
 	import { getFirebaseFirestore } from '$lib/firebase';
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
+	import { onMount } from 'svelte';
 	import type { Position } from '$lib/types';
+	import { walletStore } from '$lib/services/web3/auth';
 
 	const firestore = browser ? getFirebaseFirestore() : null;
 
@@ -23,6 +24,11 @@
 	function formatProbability(probability: number): string {
 		return `${Math.round(probability * 100)}%`;
 	}
+
+	function formatAVAX(amount: string | null): string {
+		if (!amount) return "0.00";
+		return parseFloat(amount).toFixed(4);
+	}
 </script>
 
 <svelte:head>
@@ -31,52 +37,43 @@
 
 <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 	{#if browser}
-		<SignedOut>
+		{#if !$walletStore.isConnected}
 			<div class="card text-center py-12">
-				<h2 class="text-lg font-medium text-surface-900 mb-4">Please sign in to view your account</h2>
-				<a href="/login" class="btn-primary">Log In</a>
+				<div class="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+					<svg class="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+					</svg>
+				</div>
+				<h2 class="text-lg font-medium text-surface-900 mb-2">Connect Your Wallet</h2>
+				<p class="text-surface-600 mb-6">Please connect your wallet to view your account</p>
+				<a href="/login" class="btn bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-white px-8 py-3 rounded-lg font-bold">Connect Wallet</a>
 			</div>
-		</SignedOut>
-
-		<SignedIn>
-		<User let:user>
+		{:else if $walletStore.address}
 			<!-- Profile section -->
 			<section class="card mb-6">
 				<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 					<div class="flex items-center space-x-4">
-						{#if user.photoURL}
-							<img 
-								src={user.photoURL} 
-								alt="Profile" 
-								class="w-16 h-16 rounded-full object-cover"
-							/>
-						{:else}
-							<div class="w-16 h-16 bg-brand-100 rounded-full flex items-center justify-center">
-								<span class="text-brand-700 font-bold text-2xl">
-									{user.displayName?.charAt(0) || user.email?.charAt(0) || '?'}
-								</span>
-							</div>
-						{/if}
+						<div class="w-16 h-16 bg-gradient-to-br from-brand-500 to-brand-700 rounded-full flex items-center justify-center">
+							<svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+								<path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+							</svg>
+						</div>
 						<div>
 							<h1 class="text-xl font-bold text-surface-900">
-								{user.displayName || 'User'}
+								My Wallet
 							</h1>
-							<p class="text-surface-500">{user.email}</p>
+							<p class="text-surface-500 font-mono text-sm">{$walletStore.address}</p>
+							<p class="text-surface-400 text-xs mt-1">{formatAVAX($walletStore.balance)} AVAX</p>
 						</div>
 					</div>
 					
 					<!-- Balance from Firestore -->
-					<Doc ref="users/{user.uid}" let:data={profile} let:loading>
-						{#if loading}
-							<div class="bg-surface-50 rounded-xl px-6 py-4 text-center sm:text-right animate-pulse">
-								<div class="h-4 bg-surface-200 rounded w-16 mb-2"></div>
-								<div class="h-8 bg-surface-200 rounded w-24"></div>
-							</div>
-						{:else if profile}
+					<Doc ref="users/{$walletStore.address}" let:data={profile}>
+						{#if profile}
 							<div class="bg-surface-50 rounded-xl px-6 py-4 text-center sm:text-right">
-								<p class="text-sm text-surface-500 mb-1">Balance</p>
+								<p class="text-sm text-surface-500 mb-1">Credits Balance</p>
 								<p class="text-3xl font-bold text-surface-900">{formatCredits(profile.balance)}</p>
-								<p class="text-xs text-surface-400">credits</p>
+								<p class="text-xs text-surface-400">available for betting</p>
 							</div>
 						{/if}
 					</Doc>
@@ -92,11 +89,10 @@
 					<Collection 
 						ref={query(
 							collection(firestore, 'positions'),
-							where('userId', '==', user.uid),
+							where('userId', '==', $walletStore.address),
 							orderBy('createdAt', 'desc')
 						)}
 						let:data={positions}
-						let:loading
 					>
 						{@const openPositions = positions?.filter((p: Position) => !p.settled) || []}
 						{@const settledPositions = positions?.filter((p: Position) => p.settled) || []}
@@ -125,16 +121,7 @@
 							</button>
 						</div>
 
-						{#if loading}
-							<div class="space-y-3">
-								{#each [1, 2, 3] as _}
-									<div class="bg-surface-50 rounded-xl p-4 animate-pulse">
-										<div class="h-5 bg-surface-200 rounded w-3/4 mb-2"></div>
-										<div class="h-4 bg-surface-200 rounded w-1/2"></div>
-									</div>
-								{/each}
-							</div>
-						{:else if activeTab === 'open'}
+						{#if activeTab === 'open'}
 							{#if openPositions.length === 0}
 								<div class="text-center py-8">
 									<svg class="w-12 h-12 mx-auto text-surface-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -227,8 +214,7 @@
 					</Collection>
 				{/if}
 			</section>
-		</User>
-		</SignedIn>
+		{/if}
 	{:else}
 		<!-- SSR fallback -->
 		<div class="card animate-pulse">

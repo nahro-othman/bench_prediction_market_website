@@ -1,23 +1,78 @@
-# Bench - Football Prediction Market
+# Bench - Next-Gen Crypto Prediction Market 🚀
 
-A clean, modern prediction market web app for football outcomes. Built with SvelteKit, Firebase, and Cloud Functions.
+A cryptocurrency-based prediction market built on **Avalanche** for the Avalanche Hackathon, featuring AI-driven automation and x402 payment flows.
+
+> **Hackathon Focus**: Building the next generation of AI + Blockchain interactions using **x402** and **ERC8004** standards on Avalanche.
 
 ![Bench Preview](https://via.placeholder.com/800x400?text=Bench+Prediction+Market)
 
-## Features
+## 🌟 Key Features
 
-- 🎯 **Browse Markets** - View prediction markets for football events
-- 💰 **Place Bets** - Bet YES or NO on outcomes with virtual credits
-- 📊 **Track Positions** - View open and settled bets
-- 🔐 **Secure Auth** - Email/password and Google sign-in
-- ⚡ **Real-time Updates** - Live market and balance updates
+- 🔗 **Avalanche-Native** - Built on Avalanche for fast, low-cost transactions
+- 💎 **x402 Payments** - Seamless crypto payments using x402 standard
+- 🤖 **AI-Powered** - Automated market operations and intelligent predictions
+- 🎯 **Decentralized Markets** - Create and trade on prediction markets
+- 📊 **Real-time Settlement** - Instant payouts via smart contracts
+- 🔐 **Web3 Auth** - Wallet-based authentication
+- ⚡ **Lightning Fast** - Optimized for Avalanche's high throughput
 
-## Tech Stack
+## 🏗️ Architecture
 
-- **Frontend**: SvelteKit 2.x with TypeScript
-- **Styling**: Tailwind CSS
-- **Backend**: Firebase (Firestore, Auth, Cloud Functions)
-- **Deployment**: Firebase Hosting (or any SvelteKit adapter)
+Our modular architecture separates concerns for scalability and security:
+
+### **3-Layer System**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Frontend Layer (Svelte)                   │
+│  • User Interface • Wallet Connection • Real-time Updates    │
+└────────────────────────────┬────────────────────────────────┘
+                             │
+┌────────────────────────────▼────────────────────────────────┐
+│          Backend Layer (Firebase + Cloud Functions)          │
+│  • Off-chain Logic • AI Automation • Oracle Integration      │
+│  • Request Validation • Event Listeners • State Management   │
+└────────────────────────────┬────────────────────────────────┘
+                             │
+┌────────────────────────────▼────────────────────────────────┐
+│          Blockchain Layer (Avalanche Smart Contracts)        │
+│  • x402 Payment Flows • ERC8004 Implementation               │
+│  • Market Settlement • Trustless Execution                   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### **Data Flow**
+
+1. **User Action** → Frontend captures wallet interaction
+2. **Backend Validation** → Cloud Functions validate request + AI decision
+3. **Oracle Query** → Fetch verified external data (sports results, etc.)
+4. **Smart Contract Call** → Execute x402 payment or settlement
+5. **Event Stream** → Contract events update Firestore in real-time
+6. **UI Update** → User sees instant feedback
+
+## 💻 Tech Stack
+
+### Frontend
+
+- **SvelteKit 2.x** - Fast, reactive UI framework
+- **TypeScript** - Type-safe development
+- **Tailwind CSS** - Modern, responsive styling
+- **Web3.js / Ethers.js** - Avalanche wallet integration
+
+### Backend (Off-Chain)
+
+- **Firebase Firestore** - Real-time database for market state
+- **Cloud Functions** - Serverless business logic
+- **AI Services** - Automated market operations
+- **Oracle Integration** - Verified external data feeds
+
+### Blockchain (On-Chain)
+
+- **Avalanche C-Chain** - EVM-compatible smart contracts
+- **x402 Standard** - Payment flow implementation
+- **ERC8004** - Advanced token standard
+- **Solidity** - Smart contract language
+- **Hardhat/Foundry** - Contract development & testing
 
 ## Project Structure
 
@@ -25,38 +80,53 @@ A clean, modern prediction market web app for football outcomes. Built with Svel
 src/
 ├── lib/
 │   ├── components/       # Reusable UI components
-│   │   ├── auth/        # Authentication forms
+│   │   ├── auth/        # Wallet connection & auth
 │   │   ├── layout/      # Layout components (Navbar)
 │   │   └── markets/     # Market-related components
 │   ├── services/        # Business logic & API calls
 │   │   ├── admin/       # Admin operations
-│   │   ├── auth/        # Auth operations
+│   │   ├── auth/        # Web3 auth operations
 │   │   ├── bets/        # Betting operations
-│   │   ├── firebase/    # Firebase client setup
+│   │   ├── web3/        # Blockchain interaction layer
 │   │   └── markets/     # Market data operations
 │   ├── stores/          # Svelte stores for state
 │   ├── types/           # TypeScript type definitions
 │   └── utils/           # Utility functions
 ├── routes/              # SvelteKit routes (pages)
-│   ├── account/         # User account page
+│   ├── account/         # User wallet & positions
 │   ├── admin/           # Admin dashboard
-│   ├── login/           # Login page
 │   ├── markets/[id]/    # Market detail page
-│   └── signup/          # Sign up page
+│   └── +page.svelte     # Home page
 └── app.css              # Global styles
 
-functions/               # Cloud Functions
+functions/               # Cloud Functions (Off-chain)
 └── src/
-    └── index.ts         # placeBet & settleMarket functions
+    ├── index.ts         # Main function exports
+    ├── oracle/          # External data fetching
+    ├── ai/              # AI automation logic
+    └── blockchain/      # Contract interaction helpers
+
+contracts/               # Avalanche Smart Contracts
+├── src/
+│   ├── PredictionMarket.sol    # Core market logic
+│   ├── X402Payment.sol         # x402 payment standard
+│   ├── ERC8004Token.sol        # ERC8004 implementation
+│   └── Oracle.sol              # Data oracle interface
+├── test/                # Contract tests
+├── scripts/             # Deployment scripts
+└── hardhat.config.js    # Avalanche network config
 ```
 
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
 
-- Node.js 20+ and npm
-- Firebase CLI (`npm install -g firebase-tools`)
-- A Firebase project
+- **Node.js 20+** and npm
+- **Firebase CLI**: `npm install -g firebase-tools`
+- **Hardhat**: `npm install -g hardhat`
+- **Avalanche Wallet** (Core, MetaMask with Avalanche network)
+- **AVAX Testnet Tokens** (from Avalanche Faucet)
+- Firebase project configured
 
 ### 1. Clone and Install
 
@@ -73,6 +143,7 @@ cd functions && npm install && cd ..
 1. Create a new Firebase project at [console.firebase.google.com](https://console.firebase.google.com)
 
 2. Enable these Firebase services:
+
    - **Authentication**: Enable Email/Password and Google providers
    - **Firestore**: Create a database in production or test mode
    - **Functions**: Enable Cloud Functions (requires Blaze plan)
@@ -115,29 +186,92 @@ For the MVP, create an `admins` collection in Firestore with documents where the
 // Fields: { name: "Admin Name" }
 ```
 
-### 5. Run Development Server
+### 5. Avalanche Smart Contract Setup
+
+```bash
+# Navigate to contracts directory
+cd contracts
+
+# Install dependencies
+npm install
+
+# Set up environment variables
+cp .env.example .env
+# Add your wallet private key and Avalanche RPC URLs
+
+# Compile contracts
+npx hardhat compile
+
+# Run tests
+npx hardhat test
+
+# Deploy to Avalanche Fuji Testnet
+npx hardhat run scripts/deploy.js --network fuji
+
+# Verify contracts
+npx hardhat verify --network fuji CONTRACT_ADDRESS
+```
+
+### 6. Configure Environment Variables
+
+Add Avalanche network configuration to `.env`:
+
+```env
+# Firebase Config
+PUBLIC_FIREBASE_API_KEY=your-api-key
+PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+PUBLIC_FIREBASE_PROJECT_ID=bench-prediction-market
+PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
+PUBLIC_FIREBASE_APP_ID=your-app-id
+
+# Avalanche Network
+PUBLIC_AVALANCHE_RPC_URL=https://api.avax-test.network/ext/bc/C/rpc
+PUBLIC_CHAIN_ID=43113
+PUBLIC_PREDICTION_MARKET_CONTRACT=0x...
+PUBLIC_X402_PAYMENT_CONTRACT=0x...
+PUBLIC_ERC8004_TOKEN_CONTRACT=0x...
+
+# Oracle API (for market resolution)
+ORACLE_API_KEY=your-oracle-api-key
+ORACLE_ENDPOINT=https://api.youroracle.com
+
+# AI Services
+OPENAI_API_KEY=your-openai-key (for AI automation)
+```
+
+### 7. Run Development Server
 
 ```bash
 # Start the SvelteKit dev server
 npm run dev
 
-# In another terminal, start Firebase emulators (optional)
-firebase emulators:start
+# In another terminal, run local Avalanche node (optional)
+npx hardhat node
+
+# Deploy contracts to local node
+npx hardhat run scripts/deploy.js --network localhost
 ```
 
 The app will be available at `http://localhost:5173`
 
-### 6. Deploy
+### 8. Deploy to Production
 
 ```bash
 # Build the SvelteKit app
 npm run build
 
+# Deploy smart contracts to Avalanche Mainnet
+cd contracts
+npx hardhat run scripts/deploy.js --network mainnet
+
 # Deploy Cloud Functions
+cd ../functions
 firebase deploy --only functions
 
-# Deploy hosting (if using Firebase Hosting)
+# Deploy frontend
 firebase deploy --only hosting
+# Or deploy to Vercel/Netlify for better performance
 ```
 
 ## Cloud Functions
@@ -145,6 +279,7 @@ firebase deploy --only hosting
 ### placeBet
 
 Places a bet atomically with these checks:
+
 - Market is open and not past close date
 - User has sufficient balance
 - Creates position and updates balance in a transaction
@@ -152,18 +287,21 @@ Places a bet atomically with these checks:
 ### settleMarket
 
 Admin-only function that:
+
 - Validates admin permissions
 - Marks market as settled
 - Calculates payouts based on probability at bet time
 - Updates all user balances
 
 **Payout Formula:**
+
 - Winners: `stake × (1 / probabilityAtBet)`
 - Losers: `0`
 
 ## Data Model
 
 ### Markets
+
 ```typescript
 {
   id: string;
@@ -179,6 +317,7 @@ Admin-only function that:
 ```
 
 ### Options (subcollection of markets)
+
 ```typescript
 {
   id: string;
@@ -192,6 +331,7 @@ Admin-only function that:
 ```
 
 ### Users
+
 ```typescript
 {
   uid: string;
@@ -204,6 +344,7 @@ Admin-only function that:
 ```
 
 ### Positions
+
 ```typescript
 {
   id: string;
@@ -212,7 +353,7 @@ Admin-only function that:
   optionId: string;
   optionLabel: string;
   marketTitle: string;
-  side: 'yes' | 'no';
+  side: "yes" | "no";
   stake: number;
   probabilityAtBet: number;
   createdAt: Timestamp;
@@ -223,15 +364,15 @@ Admin-only function that:
 
 ## Environment Variables
 
-| Variable | Description |
-|----------|-------------|
-| `PUBLIC_FIREBASE_API_KEY` | Firebase API key |
-| `PUBLIC_FIREBASE_AUTH_DOMAIN` | Firebase Auth domain |
-| `PUBLIC_FIREBASE_PROJECT_ID` | Firebase project ID |
-| `PUBLIC_FIREBASE_STORAGE_BUCKET` | Firebase storage bucket |
-| `PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | Firebase messaging sender ID |
-| `PUBLIC_FIREBASE_APP_ID` | Firebase app ID |
-| `ADMIN_UIDS` | (Functions) Comma-separated admin user IDs |
+| Variable                              | Description                                |
+| ------------------------------------- | ------------------------------------------ |
+| `PUBLIC_FIREBASE_API_KEY`             | Firebase API key                           |
+| `PUBLIC_FIREBASE_AUTH_DOMAIN`         | Firebase Auth domain                       |
+| `PUBLIC_FIREBASE_PROJECT_ID`          | Firebase project ID                        |
+| `PUBLIC_FIREBASE_STORAGE_BUCKET`      | Firebase storage bucket                    |
+| `PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | Firebase messaging sender ID               |
+| `PUBLIC_FIREBASE_APP_ID`              | Firebase app ID                            |
+| `ADMIN_UIDS`                          | (Functions) Comma-separated admin user IDs |
 
 ## Security
 
@@ -253,5 +394,3 @@ MIT License - feel free to use this as a starting point for your own project!
 ---
 
 Built with ❤️ using SvelteKit and Firebase
-
-

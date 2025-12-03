@@ -1,16 +1,17 @@
 <!--
-  Home Page using SvelteFire
+  Home Page with Wallet Authentication
   
-  Uses SvelteFire's Collection component for real-time market data.
+  Uses wallet connection for authentication and Firestore for real-time market data.
 -->
 <script lang="ts">
-  import { Collection, SignedIn, SignedOut, User, Doc } from "sveltefire";
-  import { collection, query, where, orderBy } from "firebase/firestore";
+  import { Collection, Doc } from "sveltefire";
+  import { collection, query, where, orderBy, doc } from "firebase/firestore";
   import { getFirebaseFirestore } from "$lib/firebase";
   import { browser } from "$app/environment";
   import { MarketCard, BetDialog } from "$lib/components";
   import { placeBet } from "$lib/services/bets";
   import type { MarketWithOptions, MarketOption, BetSide } from "$lib/types";
+  import { walletStore } from "$lib/services/web3/auth";
 
   // Get Firestore reference
   const firestore = browser ? getFirebaseFirestore() : null;
@@ -141,18 +142,19 @@
       Will Ronaldo retire before Messi? Who wins the World Cup 2026? Place your
       predictions and compete for bragging rights.
     </p>
-    {#if browser}
-      <SignedOut>
-        <div class="mt-6 flex justify-center space-x-4">
-          <a href="/signup" class="btn-primary"> Get Started Free </a>
-          <a href="/login" class="btn-secondary"> Log In </a>
-        </div>
-      </SignedOut>
-    {:else}
-      <!-- SSR fallback: show auth buttons -->
+    {#if browser && !$walletStore.isConnected}
       <div class="mt-6 flex justify-center space-x-4">
-        <a href="/signup" class="btn-primary"> Get Started Free </a>
-        <a href="/login" class="btn-secondary"> Log In </a>
+        <a
+          href="/login"
+          class="btn bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-white px-8 py-3 rounded-lg font-bold text-lg shadow-lg hover:shadow-xl transition-all"
+        >
+          Connect Wallet to Start
+        </a>
+      </div>
+    {:else if !browser}
+      <!-- SSR fallback: show connect button -->
+      <div class="mt-6 flex justify-center space-x-4">
+        <a href="/login" class="btn-primary"> Connect Wallet </a>
       </div>
     {/if}
   </section>
@@ -246,34 +248,31 @@
                   ...market,
                   options: options || [],
                 }}
-                <SignedIn>
-                  <User let:user>
-                    <Doc ref="users/{user.uid}" let:data={profile}>
-                      <MarketCard
-                        market={marketWithOptions}
-                        onBet={(mId, oId, side) => {
-                          userBalance = profile?.balance || 0;
-                          handleBet(
-                            mId,
-                            oId,
-                            side,
-                            markets.map((m) =>
-                              m.id === market.id ? marketWithOptions : m
-                            )
-                          );
-                        }}
-                        disabled={false}
-                      />
-                    </Doc>
-                  </User>
-                </SignedIn>
-                <SignedOut>
+                {#if $walletStore.isConnected && $walletStore.address}
+                  <Doc ref="users/{$walletStore.address}" let:data={profile}>
+                    <MarketCard
+                      market={marketWithOptions}
+                      onBet={(mId, oId, side) => {
+                        userBalance = profile?.balance || 0;
+                        handleBet(
+                          mId,
+                          oId,
+                          side,
+                          markets.map((m) =>
+                            m.id === market.id ? marketWithOptions : m
+                          )
+                        );
+                      }}
+                      disabled={false}
+                    />
+                  </Doc>
+                {:else}
                   <MarketCard
                     market={marketWithOptions}
                     onBet={() => (window.location.href = "/login")}
                     disabled={true}
                   />
-                </SignedOut>
+                {/if}
               </Collection>
             {/each}
           </div>

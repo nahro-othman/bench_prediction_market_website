@@ -1,24 +1,15 @@
 <!--
-  Login Page using SvelteFire
+  Connect Wallet Page - MetaMask Authentication
 -->
 <script lang="ts">
-	import { SignedIn } from 'sveltefire';
-	import { AuthForm } from '$lib/components';
-	import { goto } from '$app/navigation';
-	import { browser } from '$app/environment';
+	import WalletConnect from '$lib/components/auth/WalletConnect.svelte';
 </script>
 
 <svelte:head>
-	<title>Log In - Bench</title>
-	<meta name="description" content="Sign in to your Bench account to access football prediction markets." />
+	<title>Connect Wallet - Bench</title>
+	<meta name="description" content="Connect your MetaMask wallet to trade on Bench prediction markets powered by Avalanche." />
 </svelte:head>
 
-{#if browser}
-	<SignedIn>
-		{@const _ = goto('/')}
-	</SignedIn>
-{/if}
-
-<div class="min-h-[calc(100vh-200px)] flex items-center justify-center px-4 py-12">
-	<AuthForm mode="login" />
+<div class="min-h-[calc(100vh-200px)] flex items-center justify-center px-4 py-12 bg-gradient-to-br from-surface-50 to-brand-50">
+	<WalletConnect />
 </div>

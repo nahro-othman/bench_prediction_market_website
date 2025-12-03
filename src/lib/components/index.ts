@@ -17,5 +17,6 @@ export { default as BetDialog } from './markets/BetDialog.svelte';
 
 // Auth components
 export { default as AuthForm } from './auth/AuthForm.svelte';
+export { default as WalletConnect } from './auth/WalletConnect.svelte';
 
 

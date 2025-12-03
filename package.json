@@ -23,9 +23,9 @@
     "vite": "^5.4.11"
   },
   "dependencies": {
+    "ethers": "^6.15.0",
     "firebase": "^11.0.2",
     "sveltefire": "^0.4.5"
   },
   "type": "module"
 }
-
