@@ -1,0 +1,23 @@
+# Hardhat files
+cache
+artifacts
+deployments/*.json
+!deployments/.gitkeep
+
+# TypeChain
+typechain
+typechain-types
+
+# Environment variables
+.env
+
+# Dependencies
+node_modules
+
+# Coverage
+coverage
+coverage.json
+
+# Hardhat Ignition default folder for deployments against a local node
+ignition/deployments/chain-31337
+

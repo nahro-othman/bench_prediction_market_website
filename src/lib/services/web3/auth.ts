@@ -39,19 +39,23 @@ export const AVALANCHE_NETWORKS = {
 // Current network (switch to 'mainnet' for production)
 const CURRENT_NETWORK = 'fuji';
 
-// Wallet store
+// Wallet store with provider and signer
 export const walletStore = writable<{
 	address: string | null;
 	balance: string | null;
 	chainId: number | null;
 	isConnected: boolean;
 	isCorrectNetwork: boolean;
+	provider: any | null;
+	signer: any | null;
 }>({
 	address: null,
 	balance: null,
 	chainId: null,
 	isConnected: false,
-	isCorrectNetwork: false
+	isCorrectNetwork: false,
+	provider: null,
+	signer: null
 });
 
 /**
@@ -143,6 +147,7 @@ export async function connectWallet(): Promise<string> {
 
 		// Get balance
 		const provider = new ethers.BrowserProvider(ethereum);
+		const signer = await provider.getSigner();
 		const balance = await provider.getBalance(address);
 		const formattedBalance = ethers.formatEther(balance);
 		const chainId = await getCurrentChainId();
@@ -153,7 +158,9 @@ export async function connectWallet(): Promise<string> {
 			balance: formattedBalance,
 			chainId,
 			isConnected: true,
-			isCorrectNetwork: true
+			isCorrectNetwork: true,
+			provider,
+			signer
 		});
 
 		// Create or update user in Firestore
@@ -175,7 +182,9 @@ export function disconnectWallet(): void {
 		balance: null,
 		chainId: null,
 		isConnected: false,
-		isCorrectNetwork: false
+		isCorrectNetwork: false,
+		provider: null,
+		signer: null
 	});
 	
 	// Clear from localStorage

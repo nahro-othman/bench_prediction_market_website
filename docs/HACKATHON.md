@@ -1,15 +1,19 @@
 # Avalanche Hackathon Submission - Bench
 
 ## 🎯 Project Title
+
 **Bench: AI-Powered Crypto Prediction Markets on Avalanche**
 
 ## 📝 Tagline
+
 Building the next generation of AI + Blockchain interactions using x402 and ERC8004 on Avalanche
 
 ## 🎬 Demo Video
+
 [Add your demo video link here]
 
 ## 🌐 Live Demo
+
 [Add your deployed app URL here]
 
 ## 📖 Description
@@ -19,6 +23,7 @@ Bench is a cryptocurrency-native prediction market platform that leverages Avala
 ### The Problem
 
 Traditional prediction markets suffer from:
+
 - **Slow Settlement**: Hours or days to resolve markets
 - **High Fees**: Gas costs make small bets uneconomical
 - **Poor UX**: Complex blockchain interactions confuse users
@@ -32,7 +37,8 @@ Bench solves these problems through a modular 3-layer architecture:
 1. **Lightning-Fast Avalanche Blockchain**: Sub-second finality for instant settlements
 2. **x402 Payment Flows**: Streamlined payments without approval transactions
 3. **ERC8004 Advanced Tokens**: Conditional and time-locked transfers
-4. **AI Automation**: Intelligent market creation, probability updates, and risk management
+4. **AI Automation** (Planned): Intelligent market creation, probability updates, and risk management
+   - See `docs/AI_EXPLANATION.md` for detailed breakdown of what AI will do
 5. **Decentralized Oracle**: Multiple data sources with cryptographic verification
 
 ## 🏗️ How It Works
@@ -84,13 +90,14 @@ function placeBet(uint256 marketId, bool outcome, uint256 amount) external {
         amount,
         abi.encode(marketId, outcome, msg.sender)
     );
-    
+
     // Real-time payment status streaming
     emit PaymentInitiated(paymentId, msg.sender, amount);
 }
 ```
 
 **Benefits**:
+
 - **1-Click Betting**: No approval transaction needed
 - **Real-time Status**: Stream payment progress to user
 - **Gas Efficient**: 30% less gas vs standard ERC20 flow
@@ -116,6 +123,7 @@ function lockStake(address bettor, uint256 amount, uint256 settlementTime) exter
 ```
 
 **Benefits**:
+
 - **Automated Settlement**: No manual claim required
 - **Gas Optimization**: Batch process multiple payouts
 - **Flexible Logic**: Complex payout structures
@@ -134,16 +142,19 @@ function lockStake(address bettor, uint256 amount, uint256 settlementTime) exter
 ### AI-Powered Features
 
 1. **Intelligent Market Creation**
+
    - Analyzes trending topics on Twitter, news sites
    - Suggests high-engagement markets automatically
    - Sets initial probabilities using historical data
 
 2. **Dynamic Probability Adjustment**
+
    - Machine learning models update odds in real-time
    - Detects market manipulation patterns
    - Balances supply/demand to ensure platform sustainability
 
 3. **Automated Risk Management**
+
    - Flags unusual betting patterns
    - Prevents platform from being drained
    - Adjusts limits dynamically based on liquidity
@@ -158,7 +169,8 @@ function lockStake(address bettor, uint256 amount, uint256 settlementTime) exter
 **Problem**: Blockchains are deterministic and can't make intelligent decisions  
 **Solution**: AI runs off-chain in Cloud Functions, makes decisions, then executes on-chain
 
-**Example**: 
+**Example**:
+
 ```
 Market: "Will it rain in San Francisco tomorrow?"
 ├─ AI checks: Weather API, news, historical patterns
@@ -187,21 +199,25 @@ Market: "Will it rain in San Francisco tomorrow?"
 ## 💡 Innovation Highlights
 
 ### 1. Hybrid Architecture
+
 - **Off-chain AI** for intelligence
 - **On-chain execution** for trust
 - **Best of both worlds**: Fast + Transparent
 
 ### 2. x402 Payment UX
+
 - **First prediction market** to implement x402
 - **60% faster** than traditional flow
 - **30% cheaper** in gas costs
 
 ### 3. ERC8004 Advanced Logic
+
 - **Conditional transfers** unlock new use cases
 - **Automated payouts** improve UX
 - **Gas-optimized** batch operations
 
 ### 4. Real-Time Everything
+
 - **WebSocket updates** from Firestore
 - **Event streaming** from blockchain
 - **Instant feedback** to users
@@ -209,18 +225,21 @@ Market: "Will it rain in San Francisco tomorrow?"
 ## 📊 Technical Achievements
 
 ### Performance Metrics
+
 - ⚡ **< 1 second** bet confirmation
 - 💰 **$0.01 average** transaction cost
 - 📈 **1000+ bets/minute** throughput
 - 🎯 **99.9%** uptime guarantee
 
 ### Smart Contract Efficiency
+
 - **Gas optimized**: 30% reduction vs baseline
 - **Upgradeable**: Proxy pattern for future improvements
 - **Audited**: Passed security audit (or in progress)
 - **Tested**: 95%+ test coverage
 
 ### AI Accuracy
+
 - **Market suggestions**: 75%+ acceptance rate
 - **Probability accuracy**: < 5% RMSE
 - **Risk detection**: 98%+ accuracy
@@ -228,18 +247,21 @@ Market: "Will it rain in San Francisco tomorrow?"
 ## 🛠️ Tech Stack
 
 ### Frontend
+
 - SvelteKit 2.x - Reactive UI
 - TypeScript - Type safety
 - Ethers.js - Avalanche interaction
 - TailwindCSS - Styling
 
 ### Backend
+
 - Firebase Firestore - Real-time database
 - Cloud Functions - Serverless compute
 - OpenAI API - AI intelligence
 - Node.js 20 - Runtime
 
 ### Blockchain
+
 - Solidity ^0.8.20 - Smart contracts
 - Hardhat - Development framework
 - OpenZeppelin - Security libraries
@@ -256,18 +278,21 @@ Market: "Will it rain in San Francisco tomorrow?"
 ## 🔮 Future Plans
 
 ### Short Term (3 months)
+
 - [ ] Launch on Avalanche Mainnet
 - [ ] Add 10+ sports leagues
 - [ ] Implement social features (following, leaderboards)
 - [ ] Mobile app (iOS/Android)
 
 ### Medium Term (6 months)
+
 - [ ] Dedicated Avalanche Subnet
 - [ ] Advanced market types (spreads, parlays)
 - [ ] Liquidity mining rewards
 - [ ] Governance token launch
 
 ### Long Term (12+ months)
+
 - [ ] Expand to other categories (politics, entertainment, crypto)
 - [ ] Cross-chain bridges
 - [ ] Professional trader tools (APIs, bots)
@@ -289,6 +314,7 @@ Market: "Will it rain in San Francisco tomorrow?"
 ## 🏆 Hackathon Categories
 
 This project qualifies for:
+
 - ✅ **Best use of x402**
 - ✅ **Best use of ERC8004**
 - ✅ **AI + Blockchain Integration**
@@ -298,6 +324,7 @@ This project qualifies for:
 ---
 
 ## 📜 License
+
 MIT License - Built with ❤️ on Avalanche
 
 ## 🙏 Acknowledgments
@@ -310,5 +337,3 @@ MIT License - Built with ❤️ on Avalanche
 ---
 
 **#AvalancheHackathon #x402 #ERC8004 #AIBlockchain**
-
-

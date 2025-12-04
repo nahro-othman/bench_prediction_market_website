@@ -249,11 +249,11 @@
                   options: options || [],
                 }}
                 {#if $walletStore.isConnected && $walletStore.address}
-                  <Doc ref="users/{$walletStore.address}" let:data={profile}>
+                  <Doc ref={doc(firestore, "users", $walletStore.address)} let:data={profile}>
                     <MarketCard
                       market={marketWithOptions}
                       onBet={(mId, oId, side) => {
-                        userBalance = profile?.balance || 0;
+                        userBalance = profile?.balance || 1000;
                         handleBet(
                           mId,
                           oId,
