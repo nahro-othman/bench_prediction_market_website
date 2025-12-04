@@ -119,22 +119,26 @@ async function fallbackPlaceBet(
 		const option = optionSnap.data();
 		const market = marketSnap.data();
 
-		// Check user balance
+		// Check AVAX balance
+		const avaxBalance = parseFloat(wallet.balance || '0');
+		if (avaxBalance < stake) {
+			return { success: false, error: 'Insufficient AVAX balance' };
+		}
+
+		// Ensure user profile exists
 		const userRef = doc(db, 'users', wallet.address);
 		const userSnap = await getDoc(userRef);
 		
 		if (!userSnap.exists()) {
-			return { success: false, error: 'User profile not found. Please reconnect your wallet.' };
+			// Create user profile
+			await setDoc(userRef, {
+				address: wallet.address,
+				createdAt: serverTimestamp(),
+				updatedAt: serverTimestamp()
+			});
 		}
 
-		const user = userSnap.data();
-		const currentBalance = user.balance || 0;
-
-		if (currentBalance < stake) {
-			return { success: false, error: 'Insufficient balance' };
-		}
-
-		// Create position
+		// Create position (stored in AVAX)
 		const positionRef = await addDoc(collection(db, 'positions'), {
 			userId: wallet.address,
 			walletAddress: wallet.address,
@@ -143,7 +147,7 @@ async function fallbackPlaceBet(
 			optionLabel: option.label,
 			marketTitle: market.title,
 			side,
-			stake,
+			stake,  // Now in AVAX
 			probabilityAtBet: option.probability,
 			createdAt: serverTimestamp(),
 			settled: false,
@@ -151,25 +155,18 @@ async function fallbackPlaceBet(
 			blockchain: false
 		});
 
-		// Update user balance
-		await setDoc(userRef, {
-			balance: currentBalance - stake,
-			updatedAt: serverTimestamp()
-		}, { merge: true });
-
-		// Update option volume
+		// Update option volume (in AVAX)
 		const volumeField = side === 'yes' ? 'yesVolume' : 'noVolume';
 		await setDoc(optionRef, {
 			[volumeField]: (option[volumeField] || 0) + stake
 		}, { merge: true });
 
-		console.log('✅ Bet placed successfully via Firestore!');
+		console.log('✅ Bet placed successfully! (AVAX amount: ' + stake + ')');
 
 		return {
 			success: true,
 			positionId: positionRef.id,
-			newBalance: currentBalance - stake,
-			message: 'Bet placed successfully!'
+			message: 'Bet placed successfully! Note: AVAX will be transferred when on-chain betting is enabled.'
 		};
 	} catch (error) {
 		console.error('Firestore bet placement failed:', error);

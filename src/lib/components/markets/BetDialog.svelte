@@ -19,7 +19,7 @@
 -->
 <script lang="ts">
 	import type { MarketWithOptions, MarketOption, BetSide } from '$lib/types';
-	import { formatProbability, formatCredits, calculatePotentialPayout } from '$lib/utils';
+	import { formatProbability, calculatePotentialPayout } from '$lib/utils';
 
 	interface Props {
 		isOpen: boolean;
@@ -43,9 +43,13 @@
 
 	function validateStake(value: number): string | null {
 		if (value <= 0) return 'Enter a stake amount';
-		if (value > balance) return 'Insufficient balance';
+		if (value > balance) return 'Insufficient AVAX balance';
 		if (!Number.isFinite(value)) return 'Invalid amount';
 		return null;
+	}
+
+	function formatAVAX(amount: number): string {
+		return amount.toFixed(4);
 	}
 
 	function handleSubmit(e: Event) {
@@ -60,8 +64,8 @@
 		onClose();
 	}
 
-	// Quick stake buttons
-	const quickStakes = [10, 25, 50, 100];
+	// Quick stake buttons in AVAX
+	const quickStakes = [0.01, 0.05, 0.1, 0.5];
 </script>
 
 {#if isOpen && market && option}
@@ -142,15 +146,15 @@
 							type="number"
 							id="stake"
 							bind:value={stakeInput}
-							placeholder="0"
-							min="1"
+							placeholder="0.0"
+							min="0.001"
 							max={balance}
-							step="1"
+							step="0.001"
 							class="input pr-16 text-lg"
 							disabled={loading}
 						/>
-						<span class="absolute right-4 top-1/2 -translate-y-1/2 text-surface-400 text-sm">
-							credits
+						<span class="absolute right-4 top-1/2 -translate-y-1/2 text-surface-400 text-sm font-semibold">
+							AVAX
 						</span>
 					</div>
 
@@ -186,17 +190,17 @@
 				<div class="bg-surface-50 rounded-xl p-4">
 					<div class="flex justify-between items-center">
 						<span class="text-surface-600">Your balance</span>
-						<span class="font-medium text-surface-900">{formatCredits(balance)} credits</span>
+						<span class="font-medium text-surface-900">{formatAVAX(balance)} AVAX</span>
 					</div>
 					<div class="flex justify-between items-center mt-2">
 						<span class="text-surface-600">Potential payout</span>
 						<span class="font-bold text-brand-600">
-							{stake > 0 ? formatCredits(Math.round(potentialPayout)) : '–'} credits
+							{stake > 0 ? formatAVAX(potentialPayout) : '–'} AVAX
 						</span>
 					</div>
 					{#if stake > 0}
 						<p class="text-xs text-surface-400 mt-2">
-							If your prediction is correct, you win {formatCredits(Math.round(potentialPayout - stake))} credits profit
+							If your prediction is correct, you win {formatAVAX(potentialPayout - stake)} AVAX profit
 						</p>
 					{/if}
 				</div>
@@ -220,7 +224,7 @@
 							<span>Placing bet...</span>
 						</span>
 					{:else}
-						Place {side === 'yes' ? 'YES' : 'NO'} bet for {stake > 0 ? formatCredits(stake) : 0} credits
+						Place {side === 'yes' ? 'YES' : 'NO'} bet for {stake > 0 ? formatAVAX(stake) : 0} AVAX
 					{/if}
 				</button>
 			</form>

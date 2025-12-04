@@ -5,12 +5,13 @@
 -->
 <script lang="ts">
 	import { page } from '$app/stores';
-	import { Doc, Collection, SignedIn, SignedOut, User } from 'sveltefire';
+	import { Doc, Collection } from 'sveltefire';
 	import { collection } from 'firebase/firestore';
 	import { getFirebaseFirestore } from '$lib/firebase';
 	import { browser } from '$app/environment';
 	import { OptionRow, BetDialog } from '$lib/components';
 	import { placeBet } from '$lib/services/bets';
+	import { walletStore } from '$lib/services/web3/auth';
 	import type { MarketOption, BetSide } from '$lib/types';
 
 	const firestore = browser ? getFirebaseFirestore() : null;
@@ -22,7 +23,6 @@
 	let selectedSide = $state<BetSide>('yes');
 	let betLoading = $state(false);
 	let betError = $state('');
-	let userBalance = $state(0);
 	let currentMarket = $state<any>(null);
 
 	function formatDate(timestamp: any): string {
@@ -48,10 +48,6 @@
 			return diffDays === -1 ? '1 day ago' : `${Math.abs(diffDays)} days ago`;
 		}
 		return 'today';
-	}
-
-	function formatCredits(amount: number): string {
-		return new Intl.NumberFormat('en-US').format(Math.round(amount || 0));
 	}
 
 	function formatProbability(probability: number): string {
@@ -195,20 +191,16 @@
 				<section class="card">
 					<h2 class="text-lg font-semibold text-surface-900 mb-4">Options</h2>
 
-					{#if browser}
-						<SignedOut>
-							<div class="bg-brand-50 rounded-xl p-4 mb-4">
-								<p class="text-sm text-brand-700">
-									<a href="/login" class="font-medium underline">Log in</a> or 
-									<a href="/signup" class="font-medium underline">sign up</a> to place bets on this market.
-								</p>
-							</div>
-						</SignedOut>
-					{:else}
+					{#if browser && !$walletStore.isConnected}
 						<div class="bg-brand-50 rounded-xl p-4 mb-4">
 							<p class="text-sm text-brand-700">
-								<a href="/login" class="font-medium underline">Log in</a> or 
-								<a href="/signup" class="font-medium underline">sign up</a> to place bets on this market.
+								<a href="/login" class="font-medium underline">Connect wallet</a> to place bets on this market.
+							</p>
+						</div>
+					{:else if !browser}
+						<div class="bg-brand-50 rounded-xl p-4 mb-4">
+							<p class="text-sm text-brand-700">
+								<a href="/login" class="font-medium underline">Connect wallet</a> to place bets on this market.
 							</p>
 						</div>
 					{/if}
@@ -219,28 +211,14 @@
 						
 						<div class="divide-y divide-surface-100">
 							{#each sortedOptions as option (option.id)}
-								{#if browser}
-									<SignedIn>
-										<User let:user>
-											<Doc ref="users/{user.uid}" let:data={profile}>
-												<OptionRow 
-													option={{...option, marketId}}
-													onBet={(optionId, side) => {
-														userBalance = profile?.balance || 0;
-														handleBet(optionId, side, sortedOptions.map(o => ({...o, marketId})));
-													}}
-													disabled={!isOpen}
-												/>
-											</Doc>
-										</User>
-									</SignedIn>
-									<SignedOut>
-										<OptionRow 
-											option={{...option, marketId}}
-											onBet={() => {}}
-											disabled={true}
-										/>
-									</SignedOut>
+								{#if browser && $walletStore.isConnected}
+									<OptionRow 
+										option={{...option, marketId}}
+										onBet={(optionId, side) => {
+											handleBet(optionId, side, sortedOptions.map(o => ({...o, marketId})));
+										}}
+										disabled={!isOpen}
+									/>
 								{:else}
 									<OptionRow 
 										option={{...option, marketId}}
@@ -285,7 +263,7 @@
 	market={currentMarket ? { ...currentMarket, options: [] } : null}
 	option={selectedOption}
 	side={selectedSide}
-	balance={userBalance}
+	balance={parseFloat($walletStore.balance || '0')}
 	onConfirm={handleConfirmBet}
 	onClose={handleCloseBetDialog}
 	loading={betLoading}

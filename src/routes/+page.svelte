@@ -65,7 +65,6 @@
   let selectedSide = $state<BetSide>("yes");
   let betLoading = $state(false);
   let betError = $state("");
-  let userBalance = $state(0);
 
   function handleBet(
     marketId: string,
@@ -249,23 +248,20 @@
                   options: options || [],
                 }}
                 {#if $walletStore.isConnected && $walletStore.address}
-                  <Doc ref={doc(firestore, "users", $walletStore.address)} let:data={profile}>
-                    <MarketCard
-                      market={marketWithOptions}
-                      onBet={(mId, oId, side) => {
-                        userBalance = profile?.balance || 1000;
-                        handleBet(
-                          mId,
-                          oId,
-                          side,
-                          markets.map((m) =>
-                            m.id === market.id ? marketWithOptions : m
-                          )
-                        );
-                      }}
-                      disabled={false}
-                    />
-                  </Doc>
+                  <MarketCard
+                    market={marketWithOptions}
+                    onBet={(mId, oId, side) => {
+                      handleBet(
+                        mId,
+                        oId,
+                        side,
+                        markets.map((m) =>
+                          m.id === market.id ? marketWithOptions : m
+                        )
+                      );
+                    }}
+                    disabled={false}
+                  />
                 {:else}
                   <MarketCard
                     market={marketWithOptions}
@@ -352,7 +348,7 @@
   market={selectedMarket}
   option={selectedOption}
   side={selectedSide}
-  balance={userBalance}
+  balance={parseFloat($walletStore.balance || '0')}
   onConfirm={handleConfirmBet}
   onClose={handleCloseBetDialog}
   loading={betLoading}

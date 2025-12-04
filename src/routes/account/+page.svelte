@@ -17,10 +17,6 @@
 
 	let activeTab = $state<'open' | 'settled'>('open');
 
-	function formatCredits(amount: number): string {
-		return new Intl.NumberFormat('en-US').format(Math.round(amount || 0));
-	}
-
 	function formatProbability(probability: number): string {
 		return `${Math.round(probability * 100)}%`;
 	}
@@ -51,32 +47,24 @@
 		{:else if $walletStore.address}
 			<!-- Profile section -->
 			<section class="card mb-6">
-				<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-					<div class="flex items-center space-x-4">
-						<div class="w-16 h-16 bg-gradient-to-br from-brand-500 to-brand-700 rounded-full flex items-center justify-center">
-							<svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
-								<path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
-							</svg>
-						</div>
-						<div>
-							<h1 class="text-xl font-bold text-surface-900">
-								My Wallet
-							</h1>
-							<p class="text-surface-500 font-mono text-sm">{$walletStore.address}</p>
-							<p class="text-surface-400 text-xs mt-1">{formatAVAX($walletStore.balance)} AVAX</p>
+				<div class="flex items-center space-x-4">
+					<div class="w-16 h-16 bg-gradient-to-br from-brand-500 to-brand-700 rounded-full flex items-center justify-center">
+						<svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+							<path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+						</svg>
+					</div>
+					<div class="flex-1">
+						<h1 class="text-xl font-bold text-surface-900">
+							My Wallet
+						</h1>
+						<p class="text-surface-500 font-mono text-sm">{$walletStore.address}</p>
+						<div class="flex items-center gap-2 mt-2">
+							<div class="bg-orange-50 px-3 py-1 rounded-lg border border-orange-200">
+								<span class="text-sm font-bold text-orange-900">{formatAVAX($walletStore.balance)} AVAX</span>
+							</div>
+							<span class="text-xs text-surface-500">available for betting</span>
 						</div>
 					</div>
-					
-					<!-- Balance from Firestore -->
-					<Doc ref="users/{$walletStore.address}" let:data={profile}>
-						{#if profile}
-							<div class="bg-surface-50 rounded-xl px-6 py-4 text-center sm:text-right">
-								<p class="text-sm text-surface-500 mb-1">Credits Balance</p>
-								<p class="text-3xl font-bold text-surface-900">{formatCredits(profile.balance)}</p>
-								<p class="text-xs text-surface-400">available for betting</p>
-							</div>
-						{/if}
-					</Doc>
 				</div>
 			</section>
 

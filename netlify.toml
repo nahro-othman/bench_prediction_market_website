@@ -1,0 +1,13 @@
+# Netlify Configuration for Bench Prediction Market
+# SvelteKit deployment on Netlify
+
+[build]
+  command = "npm run build"
+  publish = ".svelte-kit/netlify"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+# Note: @sveltejs/adapter-netlify handles routing and headers automatically
+# Headers and redirects are managed by the adapter
+

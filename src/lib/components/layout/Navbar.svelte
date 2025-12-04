@@ -8,31 +8,13 @@
   import { browser } from "$app/environment";
   import { onMount } from "svelte";
   import { walletStore, disconnectWallet, autoConnectWallet } from "$lib/services/web3/auth";
-  import { getFirebaseFirestore } from "$lib/firebase";
-  import { doc, onSnapshot } from "firebase/firestore";
 
   let isMenuOpen = $state(false);
-  let balance = $state(0);
 
   onMount(async () => {
     if (browser) {
       // Try to auto-connect
       await autoConnectWallet();
-      
-      // Listen to balance updates if connected
-      if ($walletStore.isConnected && $walletStore.address) {
-        const firestore = getFirebaseFirestore();
-        const userRef = doc(firestore, 'users', $walletStore.address);
-        
-        // Real-time balance listener
-        const unsubscribe = onSnapshot(userRef, (snap) => {
-          if (snap.exists()) {
-            balance = snap.data().balance || 0;
-          }
-        });
-
-        return () => unsubscribe();
-      }
     }
   });
 
@@ -40,10 +22,6 @@
     disconnectWallet();
     goto("/");
     isMenuOpen = false;
-  }
-
-  function formatCredits(amount: number): string {
-    return new Intl.NumberFormat("en-US").format(Math.round(amount || 0));
   }
 
   function formatAddress(address: string): string {
@@ -103,11 +81,6 @@
               <span class="text-sm font-semibold text-orange-900">{formatAVAX($walletStore.balance)} AVAX</span>
             </div>
 
-            <!-- Credits Balance -->
-            <div class="hidden sm:flex items-center space-x-2 bg-surface-100 px-3 py-1.5 rounded-lg">
-              <span class="text-sm font-semibold text-surface-900">{formatCredits(balance)} Credits</span>
-            </div>
-
             <!-- Wallet dropdown -->
             <div class="relative">
               <button
@@ -137,18 +110,12 @@
                     </p>
                   </div>
                   
-                  <!-- Mobile balances -->
-                  <div class="sm:hidden px-4 py-2 border-b border-surface-100 space-y-1">
+                  <!-- Mobile balance -->
+                  <div class="sm:hidden px-4 py-2 border-b border-surface-100">
                     <div class="flex justify-between items-center">
                       <p class="text-xs text-surface-500">AVAX Balance</p>
                       <p class="text-sm font-semibold text-orange-600">
-                        {formatAVAX($walletStore.balance)}
-                      </p>
-                    </div>
-                    <div class="flex justify-between items-center">
-                      <p class="text-xs text-surface-500">Credits</p>
-                      <p class="text-sm font-semibold text-surface-900">
-                        {formatCredits(balance)}
+                        {formatAVAX($walletStore.balance)} AVAX
                       </p>
                     </div>
                   </div>

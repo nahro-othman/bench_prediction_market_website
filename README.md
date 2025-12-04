@@ -356,11 +356,49 @@ Admin-only function that:
 | `PUBLIC_FIREBASE_APP_ID`              | Firebase app ID                            |
 | `ADMIN_UIDS`                          | (Functions) Comma-separated admin user IDs |
 
+## 🚀 Deployment
+
+### Deploy to Netlify (Recommended)
+
+**Quick Deploy:**
+
+```bash
+# Option 1: Use the deployment script
+./deploy-netlify.sh
+
+# Option 2: Manual deployment
+npm install -g netlify-cli
+netlify login
+netlify init
+netlify deploy --prod
+```
+
+**Or deploy via Netlify UI:**
+
+1. Push your code to GitHub/GitLab
+2. Go to [Netlify](https://app.netlify.com/)
+3. Click "Add new site" → "Import an existing project"
+4. Select your repository
+5. Add environment variables (see `.env.example`)
+6. Deploy!
+
+📖 **Full deployment guide:** See `NETLIFY_DEPLOYMENT.md` and `DEPLOYMENT_CHECKLIST.md`
+
+### Environment Variables for Production
+
+Set these in Netlify's environment variables:
+
+- All `PUBLIC_*` variables from your `.env` file
+- Firebase configuration
+- Avalanche RPC URL and Chain ID
+- Smart contract addresses
+
 ## Security
 
 - **Firestore Rules**: Protect data access at the database level
 - **Cloud Functions**: Handle critical operations with server-side validation
 - **Client Validation**: UI-level checks for better UX
+- **MetaMask**: Wallet-based authentication for secure access
 
 ## Contributing
 

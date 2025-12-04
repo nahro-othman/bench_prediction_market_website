@@ -28,3 +28,6 @@ functions/lib/
 npm-debug.log*
 
 
+
+# Local Netlify folder
+.netlify

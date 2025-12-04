@@ -16,7 +16,7 @@ export function formatProbability(probability: number): string {
 }
 
 /**
- * Format a number as currency (demo credits)
+ * Format a number with thousand separators
  * @param amount - Amount to format
  * @returns Formatted string like "1,000"
  */
