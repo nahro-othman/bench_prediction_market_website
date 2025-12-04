@@ -6,7 +6,6 @@ describe("PredictionMarket", function () {
   let predictionMarket;
   let x402Payment;
   let token;
-  let oracle;
   let owner;
   let user1;
   let user2;
@@ -28,11 +27,6 @@ describe("PredictionMarket", function () {
     x402Payment = await X402Payment.deploy();
     await x402Payment.waitForDeployment();
 
-    // Deploy Oracle
-    const Oracle = await ethers.getContractFactory("Oracle");
-    oracle = await Oracle.deploy();
-    await oracle.waitForDeployment();
-
     // Deploy PredictionMarket
     const PredictionMarket = await ethers.getContractFactory("PredictionMarket");
     predictionMarket = await PredictionMarket.deploy(
@@ -43,7 +37,6 @@ describe("PredictionMarket", function () {
 
     // Authorize contracts
     await token.authorizeContract(await predictionMarket.getAddress(), true);
-    await predictionMarket.setOracle(owner.address, true);
   });
 
   describe("Market Creation", function () {

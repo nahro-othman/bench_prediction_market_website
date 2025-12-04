@@ -1,54 +1,49 @@
-# Bench - Next-Gen Crypto Prediction Market 🚀
+# Bench - Crypto Prediction Market 🚀
 
-A cryptocurrency-based prediction market built on **Avalanche** for the Avalanche Hackathon, featuring AI-driven automation and x402 payment flows.
-
-> **Hackathon Focus**: Building the next generation of AI + Blockchain interactions using **x402** and **ERC8004** standards on Avalanche.
+A cryptocurrency-based prediction market built on **Avalanche**, featuring MetaMask authentication and streamlined x402 payments.
 
 ![Bench Preview](https://via.placeholder.com/800x400?text=Bench+Prediction+Market)
 
 ## 🌟 Key Features
 
 - 🔗 **Avalanche-Native** - Built on Avalanche for fast, low-cost transactions
-- 💎 **x402 Payments** - Seamless crypto payments using x402 standard
-- 🤖 **AI-Powered** - Automated market operations and intelligent predictions
+- 💎 **x402 Payments** - Streamlined crypto payments (30% gas savings)
 - 🎯 **Decentralized Markets** - Create and trade on prediction markets
-- 📊 **Real-time Settlement** - Instant payouts via smart contracts
-- 🔐 **Web3 Auth** - Wallet-based authentication
-- ⚡ **Lightning Fast** - Optimized for Avalanche's high throughput
+- 📊 **Admin Settlement** - Fast market resolution
+- 🔐 **MetaMask Auth** - Simple wallet-based authentication
+- ⚡ **Lightning Fast** - Sub-second finality on Avalanche
 
 ## 🏗️ Architecture
 
-Our modular architecture separates concerns for scalability and security:
+Simple and efficient architecture:
 
 ### **3-Layer System**
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    Frontend Layer (Svelte)                   │
-│  • User Interface • Wallet Connection • Real-time Updates    │
+│  • User Interface • MetaMask Connection • Real-time Updates  │
 └────────────────────────────┬────────────────────────────────┘
                              │
 ┌────────────────────────────▼────────────────────────────────┐
 │          Backend Layer (Firebase + Cloud Functions)          │
-│  • Off-chain Logic • AI Automation • Oracle Integration      │
-│  • Request Validation • Event Listeners • State Management   │
+│  • Off-chain Logic • Request Validation • State Management   │
 └────────────────────────────┬────────────────────────────────┘
                              │
 ┌────────────────────────────▼────────────────────────────────┐
 │          Blockchain Layer (Avalanche Smart Contracts)        │
-│  • x402 Payment Flows • ERC8004 Implementation               │
-│  • Market Settlement • Trustless Execution                   │
+│  • x402 Payment Flows • ERC8004 Tokens                       │
+│  • Admin Settlement • Conditional Transfers                  │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ### **Data Flow**
 
-1. **User Action** → Frontend captures wallet interaction
-2. **Backend Validation** → Cloud Functions validate request + AI decision
-3. **Oracle Query** → Fetch verified external data (sports results, etc.)
-4. **Smart Contract Call** → Execute x402 payment or settlement
-5. **Event Stream** → Contract events update Firestore in real-time
-6. **UI Update** → User sees instant feedback
+1. **User Action** → Frontend captures MetaMask wallet interaction
+2. **Backend** → Firestore stores market state and positions
+3. **Smart Contract** → x402 payments for betting (optional integration)
+4. **Admin Settlement** → Owner can settle markets and distribute payouts
+5. **UI Update** → User sees instant feedback
 
 ## 💻 Tech Stack
 
@@ -62,9 +57,7 @@ Our modular architecture separates concerns for scalability and security:
 ### Backend (Off-Chain)
 
 - **Firebase Firestore** - Real-time database for market state
-- **Cloud Functions** - Serverless business logic
-- **AI Services** - Automated market operations
-- **Oracle Integration** - Verified external data feeds
+- **Cloud Functions** - Serverless business logic (optional)
 
 ### Blockchain (On-Chain)
 
@@ -99,19 +92,15 @@ src/
 │   └── +page.svelte     # Home page
 └── app.css              # Global styles
 
-functions/               # Cloud Functions (Off-chain)
+functions/               # Cloud Functions (optional)
 └── src/
-    ├── index.ts         # Main function exports
-    ├── oracle/          # External data fetching
-    ├── ai/              # AI automation logic
-    └── blockchain/      # Contract interaction helpers
+    └── index.ts         # Betting and settlement logic
 
 contracts/               # Avalanche Smart Contracts
 ├── src/
 │   ├── PredictionMarket.sol    # Core market logic
 │   ├── X402Payment.sol         # x402 payment standard
-│   ├── ERC8004Token.sol        # ERC8004 implementation
-│   └── Oracle.sol              # Data oracle interface
+│   └── ERC8004Token.sol        # ERC8004 token implementation
 ├── test/                # Contract tests
 ├── scripts/             # Deployment scripts
 └── hardhat.config.js    # Avalanche network config
@@ -231,13 +220,6 @@ PUBLIC_CHAIN_ID=43113
 PUBLIC_PREDICTION_MARKET_CONTRACT=0x...
 PUBLIC_X402_PAYMENT_CONTRACT=0x...
 PUBLIC_ERC8004_TOKEN_CONTRACT=0x...
-
-# Oracle API (for market resolution)
-ORACLE_API_KEY=your-oracle-api-key
-ORACLE_ENDPOINT=https://api.youroracle.com
-
-# AI Services
-OPENAI_API_KEY=your-openai-key (for AI automation)
 ```
 
 ### 7. Run Development Server

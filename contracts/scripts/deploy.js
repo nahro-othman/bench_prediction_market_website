@@ -40,15 +40,7 @@ async function main() {
   const x402Address = await x402.getAddress();
   console.log("✅ X402Payment deployed to:", x402Address);
 
-  // 3. Deploy Oracle
-  console.log("\n📦 Deploying Oracle...");
-  const Oracle = await hre.ethers.getContractFactory("Oracle");
-  const oracle = await Oracle.deploy();
-  await oracle.waitForDeployment();
-  const oracleAddress = await oracle.getAddress();
-  console.log("✅ Oracle deployed to:", oracleAddress);
-
-  // 4. Deploy PredictionMarket
+  // 3. Deploy PredictionMarket
   console.log("\n📦 Deploying PredictionMarket...");
   const PredictionMarket = await hre.ethers.getContractFactory("PredictionMarket");
   const market = await PredictionMarket.deploy(x402Address, tokenAddress);
@@ -56,23 +48,13 @@ async function main() {
   const marketAddress = await market.getAddress();
   console.log("✅ PredictionMarket deployed to:", marketAddress);
 
-  // 5. Configure contracts
+  // 4. Configure contracts
   console.log("\n⚙️  Configuring contracts...");
   
   // Authorize PredictionMarket contract for conditional transfers
   const authTx = await token.authorizeContract(marketAddress, true);
   await authTx.wait();
   console.log("✅ Authorized PredictionMarket for conditional transfers");
-
-  // Authorize deployer as oracle (for testing)
-  const oracleTx = await market.setOracle(deployer.address, true);
-  await oracleTx.wait();
-  console.log("✅ Set deployer as oracle");
-
-  // Authorize Oracle contract
-  const oracleTx2 = await oracle.authorizeOracle(deployer.address, true);
-  await oracleTx2.wait();
-  console.log("✅ Authorized deployer in Oracle contract");
 
   // 6. Save deployment info
   const deploymentInfo = {
@@ -82,14 +64,12 @@ async function main() {
     contracts: {
       ERC8004Token: tokenAddress,
       X402Payment: x402Address,
-      Oracle: oracleAddress,
       PredictionMarket: marketAddress,
     },
     // Generate env variables
     envVariables: {
       PUBLIC_TOKEN_CONTRACT: tokenAddress,
       PUBLIC_X402_CONTRACT: x402Address,
-      PUBLIC_ORACLE_CONTRACT: oracleAddress,
       PUBLIC_PREDICTION_MARKET_CONTRACT: marketAddress,
     }
   };
@@ -116,20 +96,17 @@ async function main() {
   console.log("\n📋 Contract Addresses:");
   console.log("   ERC8004Token:      ", tokenAddress);
   console.log("   X402Payment:       ", x402Address);
-  console.log("   Oracle:            ", oracleAddress);
   console.log("   PredictionMarket:  ", marketAddress);
   
   console.log("\n📝 Add these to your .env file:");
   console.log("   PUBLIC_TOKEN_CONTRACT=" + tokenAddress);
   console.log("   PUBLIC_X402_CONTRACT=" + x402Address);
-  console.log("   PUBLIC_ORACLE_CONTRACT=" + oracleAddress);
   console.log("   PUBLIC_PREDICTION_MARKET_CONTRACT=" + marketAddress);
 
   if (hre.network.name === "fuji" || hre.network.name === "mainnet") {
     console.log("\n🔍 Verify contracts on Snowtrace:");
     console.log("   npx hardhat verify --network " + hre.network.name + " " + tokenAddress + ' "Bench Credit" "BENCH" "1000000000000000000000000"');
     console.log("   npx hardhat verify --network " + hre.network.name + " " + x402Address);
-    console.log("   npx hardhat verify --network " + hre.network.name + " " + oracleAddress);
     console.log("   npx hardhat verify --network " + hre.network.name + " " + marketAddress + " " + x402Address + " " + tokenAddress);
   }
 

@@ -10,7 +10,7 @@ import "./ERC8004Token.sol";
  * @title PredictionMarket
  * @dev Core prediction market contract with x402 payment integration
  * 
- * Built for Avalanche Hackathon - AI + Blockchain Integration
+ * Built for Avalanche - Simplified Admin Settlement
  */
 contract PredictionMarket is Ownable, ReentrancyGuard {
     X402Payment public x402Payment;
@@ -54,9 +54,6 @@ contract PredictionMarket is Ownable, ReentrancyGuard {
     
     uint256 public positionCount;
     
-    // Oracle addresses for market settlement
-    mapping(address => bool) public oracles;
-    
     // Events
     event MarketCreated(uint256 indexed marketId, string question, uint256 closeTime);
     event BetPlaced(uint256 indexed marketId, uint256 indexed positionId, address indexed bettor, uint256 optionId, bool isYes, uint256 stake);
@@ -66,18 +63,6 @@ contract PredictionMarket is Ownable, ReentrancyGuard {
     constructor(address _x402Payment, address _token) Ownable(msg.sender) {
         x402Payment = X402Payment(_x402Payment);
         token = ERC8004Token(_token);
-    }
-    
-    modifier onlyOracle() {
-        require(oracles[msg.sender], "Not authorized oracle");
-        _;
-    }
-    
-    /**
-     * @dev Add or remove oracle address
-     */
-    function setOracle(address oracle, bool status) external onlyOwner {
-        oracles[oracle] = status;
     }
     
     /**
@@ -175,12 +160,12 @@ contract PredictionMarket is Ownable, ReentrancyGuard {
     }
     
     /**
-     * @dev Settle market with oracle data
+     * @dev Settle market (admin only)
      */
     function settleMarket(
         uint256 marketId,
         uint256 winningOption
-    ) external onlyOracle {
+    ) external onlyOwner {
         Market storage market = markets[marketId];
         
         require(market.exists, "Market does not exist");

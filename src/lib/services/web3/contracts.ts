@@ -41,20 +41,11 @@ const ERC8004_TOKEN_ABI = [
   "event ConditionalTransfer(address indexed from, address indexed to, uint256 amount, bytes condition)"
 ];
 
-const ORACLE_ABI = [
-  "function requestData(string dataSource) returns (bytes32)",
-  "function getRequestData(bytes32 requestId) view returns (bytes)",
-  "function isRequestFulfilled(bytes32 requestId) view returns (bool)",
-  "event DataRequested(bytes32 indexed requestId, string dataSource, address indexed requester)",
-  "event DataFulfilled(bytes32 indexed requestId, bytes data)"
-];
-
 // Contract addresses (will be populated from .env after deployment)
 const CONTRACT_ADDRESSES = {
   PREDICTION_MARKET: import.meta.env.PUBLIC_PREDICTION_MARKET_CONTRACT || '',
   X402_PAYMENT: import.meta.env.PUBLIC_X402_CONTRACT || '',
-  TOKEN: import.meta.env.PUBLIC_TOKEN_CONTRACT || '',
-  ORACLE: import.meta.env.PUBLIC_ORACLE_CONTRACT || ''
+  TOKEN: import.meta.env.PUBLIC_TOKEN_CONTRACT || ''
 };
 
 /**
@@ -307,66 +298,6 @@ export const tokenContract = {
       transferId,
       txHash: receipt.hash
     };
-  }
-};
-
-/**
- * Oracle Contract Functions
- */
-export const oracleContract = {
-  /**
-   * Request external data
-   */
-  async requestData(dataSource: string): Promise<{ requestId: string; txHash: string }> {
-    if (!CONTRACT_ADDRESSES.ORACLE) {
-      throw new Error('Oracle contract not deployed yet');
-    }
-
-    const contract = getContract(CONTRACT_ADDRESSES.ORACLE, ORACLE_ABI, true);
-    const tx = await contract.requestData(dataSource);
-    const receipt = await tx.wait();
-    
-    // Parse event to get requestId
-    const event = receipt.logs.find((log: any) => {
-      try {
-        const parsed = contract.interface.parseLog(log);
-        return parsed?.name === 'DataRequested';
-      } catch {
-        return false;
-      }
-    });
-
-    const requestId = event ? contract.interface.parseLog(event).args[0] : '0x0';
-
-    return {
-      requestId,
-      txHash: receipt.hash
-    };
-  },
-
-  /**
-   * Check if request is fulfilled
-   */
-  async isRequestFulfilled(requestId: string): Promise<boolean> {
-    if (!CONTRACT_ADDRESSES.ORACLE) {
-      return false;
-    }
-
-    const contract = getContract(CONTRACT_ADDRESSES.ORACLE, ORACLE_ABI);
-    return await contract.isRequestFulfilled(requestId);
-  },
-
-  /**
-   * Get request data
-   */
-  async getRequestData(requestId: string): Promise<any> {
-    if (!CONTRACT_ADDRESSES.ORACLE) {
-      throw new Error('Oracle contract not deployed yet');
-    }
-
-    const contract = getContract(CONTRACT_ADDRESSES.ORACLE, ORACLE_ABI);
-    const data = await contract.getRequestData(requestId);
-    return data;
   }
 };
 
