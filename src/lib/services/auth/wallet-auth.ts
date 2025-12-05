@@ -56,3 +56,4 @@ export function getCurrentUserId(): string | null {
 	return wallet.address;
 }
 
+

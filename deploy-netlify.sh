@@ -74,3 +74,4 @@ echo "4. Test placing a bet"
 echo ""
 echo "🎉 Your Bench prediction market is live!"
 
+
