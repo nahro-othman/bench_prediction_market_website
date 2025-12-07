@@ -14,6 +14,7 @@ export { default as Navbar } from './layout/Navbar.svelte';
 export { default as MarketCard } from './markets/MarketCard.svelte';
 export { default as OptionRow } from './markets/OptionRow.svelte';
 export { default as BetDialog } from './markets/BetDialog.svelte';
+export { default as BettingActivityChart } from './markets/BettingActivityChart.svelte';
 
 // Auth components
 export { default as AuthForm } from './auth/AuthForm.svelte';

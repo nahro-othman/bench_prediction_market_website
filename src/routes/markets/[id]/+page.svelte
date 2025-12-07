@@ -9,7 +9,7 @@
   import { collection } from "firebase/firestore";
   import { getFirebaseFirestore } from "$lib/firebase";
   import { browser } from "$app/environment";
-  import { OptionRow, BetDialog } from "$lib/components";
+  import { OptionRow, BetDialog, BettingActivityChart } from "$lib/components";
   import { placeBet } from "$lib/services/bets";
   import { walletStore } from "$lib/services/web3/auth";
   import type { MarketOption, BetSide } from "$lib/types";
@@ -25,6 +25,7 @@
   let betError = $state("");
   let betSuccess = $state("");
   let currentMarket = $state<any>(null);
+  let currentOptions = $state<any[]>([]);
 
   function formatDate(timestamp: any): string {
     if (!timestamp) return "";
@@ -325,6 +326,18 @@
             </div>
           </Collection>
         </section>
+
+        <!-- Betting Activity Chart -->
+        {#if browser}
+          <Collection
+            ref={collection(firestore, "markets", marketId, "options")}
+            let:data={options}
+          >
+            <section class="mt-6">
+              <BettingActivityChart {marketId} options={options || []} />
+            </section>
+          </Collection>
+        {/if}
 
         <!-- Resolution info for settled markets -->
         {#if market.status === "settled" && market.resolution}

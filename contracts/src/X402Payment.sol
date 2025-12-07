@@ -99,6 +99,10 @@ contract X402Payment is Ownable, ReentrancyGuard {
     
     /**
      * @dev Stream payment progress (internal)
+     * 
+     * Note: Auto-completes immediately on Avalanche due to sub-second finality.
+     * Progress events (50%, 100%) are emitted for UI feedback but happen
+     * in the same transaction due to Avalanche's fast block times.
      */
     function _streamPayment(bytes32 paymentId) internal {
         Payment storage payment = payments[paymentId];
@@ -111,6 +115,7 @@ contract X402Payment is Ownable, ReentrancyGuard {
         emit PaymentStreaming(paymentId, 100); // 100% progress
         
         // Auto-complete on Avalanche (sub-second finality)
+        // This happens in same transaction on Avalanche
         _completePayment(paymentId);
     }
     

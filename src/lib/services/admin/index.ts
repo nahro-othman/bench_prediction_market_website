@@ -11,10 +11,13 @@ import {
 	doc,
 	addDoc,
 	updateDoc,
+	setDoc,
 	Timestamp
 } from 'firebase/firestore';
 import { getFirebaseFirestore, getFirebaseFunctions } from '$lib/firebase';
 import { browser } from '$app/environment';
+import { predictionMarketContract } from '../web3/contracts';
+import { CONTRACTS_DEPLOYED } from '$lib/config';
 import type {
 	CreateMarketInput,
 	SettleMarketInput,
@@ -24,42 +27,107 @@ import type {
 
 /**
  * Create a new market with options
+ * 
+ * BLOCKCHAIN MODE: Creates market on-chain first, then syncs to Firestore
  */
 export async function createMarket(input: CreateMarketInput): Promise<string> {
 	if (!browser) throw new Error('Cannot create market during SSR');
 	
 	const db = getFirebaseFirestore();
-	const marketsRef = collection(db, 'markets');
 
-	const marketData: Omit<Market, 'id'> = {
-		title: input.title,
-		description: input.description || '',
-		sport: input.sport || 'football',
-		status: 'open',
-		resolution: null,
-		createdAt: Timestamp.now(),
-		updatedAt: Timestamp.now(),
-		closeAt: Timestamp.fromDate(input.closeAt)
-	};
+	if (CONTRACTS_DEPLOYED) {
+		console.log('🔗 Creating market on blockchain...');
+		
+		try {
+			// 1. Create market on blockchain
+			const closeTimeUnix = Math.floor(input.closeAt.getTime() / 1000);
+			const optionLabels = input.options.map(o => o.label);
+			
+			const { marketId: onChainMarketId, txHash } = await predictionMarketContract.createMarket(
+				input.title,
+				optionLabels,
+				closeTimeUnix
+			);
+			
+			console.log('✅ Market created on blockchain:', { onChainMarketId, txHash });
+			
+			// 2. Sync to Firestore using blockchain ID
+			const marketData: Omit<Market, 'id'> = {
+				title: input.title,
+				description: input.description || '',
+				sport: input.sport || 'football',
+				status: 'open',
+				resolution: null,
+				createdAt: Timestamp.now(),
+				updatedAt: Timestamp.now(),
+				closeAt: Timestamp.fromDate(input.closeAt)
+			};
 
-	const marketDoc = await addDoc(marketsRef, marketData);
-	const marketId = marketDoc.id;
+			// Use blockchain marketId as Firestore document ID
+			const marketRef = doc(db, 'markets', onChainMarketId);
+			await setDoc(marketRef, {
+				...marketData,
+				blockchainId: onChainMarketId,
+				txHash
+			});
 
-	// Create options subcollection
-	const optionsRef = collection(db, 'markets', marketId, 'options');
+			// 3. Create options subcollection
+			const optionsRef = collection(db, 'markets', onChainMarketId, 'options');
 
-	for (let i = 0; i < input.options.length; i++) {
-		const option = input.options[i];
-		await addDoc(optionsRef, {
-			label: option.label,
-			probability: option.probability,
-			yesVolume: 0,
-			noVolume: 0,
-			order: i
-		});
+			for (let i = 0; i < input.options.length; i++) {
+				const option = input.options[i];
+				await setDoc(doc(optionsRef, i.toString()), {
+					label: option.label,
+					probability: option.probability,
+					yesVolume: 0,
+					noVolume: 0,
+					order: i
+				});
+			}
+
+			console.log('✅ Market synced to Firestore with ID:', onChainMarketId);
+			return onChainMarketId;
+			
+		} catch (error) {
+			console.error('❌ Failed to create market on blockchain:', error);
+			throw error;
+		}
+	} else {
+		// Fallback: Create in Firestore only
+		console.warn('⚠️ Creating market in Firestore only (contracts not deployed)');
+		
+		const marketsRef = collection(db, 'markets');
+
+		const marketData: Omit<Market, 'id'> = {
+			title: input.title,
+			description: input.description || '',
+			sport: input.sport || 'football',
+			status: 'open',
+			resolution: null,
+			createdAt: Timestamp.now(),
+			updatedAt: Timestamp.now(),
+			closeAt: Timestamp.fromDate(input.closeAt)
+		};
+
+		const marketDoc = await addDoc(marketsRef, marketData);
+		const marketId = marketDoc.id;
+
+		// Create options subcollection
+		const optionsRef = collection(db, 'markets', marketId, 'options');
+
+		for (let i = 0; i < input.options.length; i++) {
+			const option = input.options[i];
+			await addDoc(optionsRef, {
+				label: option.label,
+				probability: option.probability,
+				yesVolume: 0,
+				noVolume: 0,
+				order: i
+			});
+		}
+
+		return marketId;
 	}
-
-	return marketId;
 }
 
 /**

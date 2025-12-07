@@ -7,8 +7,9 @@
 
 import { ethers } from 'ethers';
 import { writable, get } from 'svelte/store';
-import { getFirebaseFirestore } from '$lib/firebase';
+import { getFirebaseFirestore, getFirebaseAuth } from '$lib/firebase';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { signInAnonymously } from 'firebase/auth';
 
 // Avalanche Network Configuration
 export const AVALANCHE_NETWORKS = {
@@ -163,8 +164,8 @@ export async function connectWallet(): Promise<string> {
 			signer
 		});
 
-		// Create or update user in Firestore
-		await createOrUpdateUser(address);
+		// Authenticate with Firebase (needed for Cloud Functions)
+		await authenticateWithFirebase(address);
 
 		return address;
 	} catch (error: any) {
@@ -207,6 +208,30 @@ export async function signMessage(message: string): Promise<string> {
 }
 
 /**
+ * Authenticate with Firebase (needed for Cloud Functions to work)
+ * Signs in anonymously and links to wallet address
+ */
+async function authenticateWithFirebase(address: string): Promise<void> {
+	try {
+		const auth = getFirebaseAuth();
+		
+		// Sign in anonymously (allows Cloud Functions to work)
+		if (!auth.currentUser) {
+			console.log('🔐 Signing in anonymously to Firebase...');
+			await signInAnonymously(auth);
+			console.log('✅ Firebase auth successful');
+		}
+		
+		// Create or update user profile
+		await createOrUpdateUser(address);
+		
+	} catch (error) {
+		console.error('❌ Firebase authentication failed:', error);
+		// Don't throw - wallet still works, just Cloud Functions might fail
+	}
+}
+
+/**
  * Create or update user profile in Firestore
  */
 async function createOrUpdateUser(address: string): Promise<void> {
@@ -226,11 +251,13 @@ async function createOrUpdateUser(address: string): Promise<void> {
 			totalBets: 0,
 			totalWinnings: 0
 		});
+		console.log('✅ Created user profile with 1000 credits');
 	} else {
 		// Update last login
 		await setDoc(userRef, {
 			updatedAt: serverTimestamp()
 		}, { merge: true });
+		console.log('✅ Updated user profile');
 	}
 	
 	// Save to localStorage for persistence

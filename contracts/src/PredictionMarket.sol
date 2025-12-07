@@ -11,6 +11,16 @@ import "./ERC8004Token.sol";
  * @dev Core prediction market contract with x402 payment integration
  * 
  * Built for Avalanche - Simplified Admin Settlement
+ * 
+ * Payment Flow:
+ * 1. Users bet in AVAX via placeBet() with msg.value
+ * 2. AVAX goes through X402Payment for streaming
+ * 3. X402 transfers AVAX to this contract
+ * 4. Contract holds AVAX until market settles
+ * 5. Winners claim payouts in AVAX via claimPayout()
+ * 
+ * Note: ERC8004Token is used for advanced features (scheduled transfers)
+ *       but NOT for betting/payouts which are purely in AVAX
  */
 contract PredictionMarket is Ownable, ReentrancyGuard {
     X402Payment public x402Payment;
@@ -212,9 +222,9 @@ contract PredictionMarket is Ownable, ReentrancyGuard {
         position.payout = payout;
         
         if (payout > 0) {
-            // Use ERC8004 conditional transfer
-            bytes memory condition = abi.encode("market_settled", market.id, market.winningOption);
-            token.conditionalTransfer(position.bettor, payout, condition);
+            // Pay winner in AVAX (same currency they bet with)
+            (bool success, ) = position.bettor.call{value: payout}("");
+            require(success, "Payout transfer failed");
             
             emit PayoutClaimed(positionId, position.bettor, payout);
         }

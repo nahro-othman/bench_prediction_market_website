@@ -6,6 +6,7 @@
 import { ethers } from 'ethers';
 import { get } from 'svelte/store';
 import { walletStore } from './auth';
+import { CONTRACT_ADDRESSES as CONFIG_ADDRESSES } from '$lib/config';
 
 // Contract ABIs (simplified - include full ABIs from artifacts in production)
 const PREDICTION_MARKET_ABI = [
@@ -41,12 +42,8 @@ const ERC8004_TOKEN_ABI = [
   "event ConditionalTransfer(address indexed from, address indexed to, uint256 amount, bytes condition)"
 ];
 
-// Contract addresses (will be populated from .env after deployment)
-const CONTRACT_ADDRESSES = {
-  PREDICTION_MARKET: import.meta.env.PUBLIC_PREDICTION_MARKET_CONTRACT || '',
-  X402_PAYMENT: import.meta.env.PUBLIC_X402_CONTRACT || '',
-  TOKEN: import.meta.env.PUBLIC_TOKEN_CONTRACT || ''
-};
+// Contract addresses - using config file instead of env vars (more reliable!)
+const CONTRACT_ADDRESSES = CONFIG_ADDRESSES;
 
 /**
  * Get contract instance

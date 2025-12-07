@@ -126,6 +126,8 @@ export interface PlaceBetResponse {
 	positionId?: string;
 	newBalance?: number;
 	error?: string;
+	message?: string;
+	txHash?: string; // Blockchain transaction hash
 }
 
 /**

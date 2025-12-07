@@ -24,6 +24,9 @@ A cryptocurrency-based prediction market built on **Avalanche**, featuring MetaM
 **🆕 Quick Links:**
 
 - 🚀 [**START_HERE.md**](./START_HERE.md) ← **Read this first!**
+- 💰 [**PAYMENT_QUICK_REF.md**](./PAYMENT_QUICK_REF.md) ← **Payment system reference**
+- 💳 [**PAYMENT_SETUP_GUIDE.md**](./PAYMENT_SETUP_GUIDE.md) - Enable blockchain payments
+- 📊 [**PAYMENT_ANALYSIS.md**](./PAYMENT_ANALYSIS.md) - Technical payment analysis
 - ✅ [**VERIFY_EVERYTHING.md**](./VERIFY_EVERYTHING.md) - Master testing guide
 - 🎬 [**DEMO_SCRIPT.md**](./DEMO_SCRIPT.md) - 5-minute presentation
 - 📊 [**PITCH_DECK.md**](./PITCH_DECK.md) - Complete slide deck

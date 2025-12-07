@@ -35,6 +35,7 @@ interface PlaceBetInput {
 	optionId: string;
 	side: 'yes' | 'no';
 	stake: number;
+	walletAddress?: string; // Optional wallet address for wallet-based auth
 }
 
 interface PlaceBetResponse {
@@ -77,6 +78,7 @@ function isAdmin(uid: string): boolean {
  * placeBet Cloud Function
  *
  * Atomically places a bet on a market option.
+ * Works with wallet-based authentication (uses wallet address as userId)
  *
  * Transaction steps:
  * 1. Validate market is open and not past closeAt
@@ -93,12 +95,20 @@ function isAdmin(uid: string): boolean {
 export const placeBet = onCall<PlaceBetInput>(
 	{ cors: true },
 	async (request): Promise<PlaceBetResponse> => {
-		// Authentication check
-		if (!request.auth) {
-			throw new HttpsError('unauthenticated', 'Must be logged in to place bets');
+		// Get wallet address from request data (primary)
+		// Fallback to auth UID if not provided
+		let walletAddress = request.data.walletAddress;
+		
+		// If no wallet address provided, try to get from auth
+		if (!walletAddress && request.auth) {
+			walletAddress = request.auth.uid;
+		}
+		
+		if (!walletAddress) {
+			console.error('❌ No wallet address provided and no auth');
+			throw new HttpsError('unauthenticated', 'Wallet not connected or no authentication');
 		}
 
-		const uid = request.auth.uid;
 		const { marketId, optionId, side, stake } = request.data;
 
 		// Input validation
@@ -113,6 +123,15 @@ export const placeBet = onCall<PlaceBetInput>(
 		if (side !== 'yes' && side !== 'no') {
 			throw new HttpsError('invalid-argument', 'Side must be "yes" or "no"');
 		}
+
+		console.log('📞 Cloud Function placeBet called:', {
+			walletAddress,
+			marketId,
+			optionId,
+			side,
+			stake,
+			hasAuth: !!request.auth
+		});
 
 		try {
 			const result = await db.runTransaction(async (transaction) => {
@@ -157,8 +176,8 @@ export const placeBet = onCall<PlaceBetInput>(
 
 				const option = optionSnap.data()!;
 
-				// 4. Get user document
-				const userRef = db.collection('users').doc(uid);
+				// 4. Get user document (using wallet address as userId)
+				const userRef = db.collection('users').doc(walletAddress);
 				const userSnap = await transaction.get(userRef);
 
 				if (!userSnap.exists) {
@@ -172,14 +191,15 @@ export const placeBet = onCall<PlaceBetInput>(
 				if (currentBalance < stake) {
 					throw new HttpsError(
 						'failed-precondition',
-						'Insufficient balance'
+						`Insufficient balance. You have ${currentBalance} credits but need ${stake}`
 					);
 				}
 
 				// 6. Create position document
 				const positionRef = db.collection('positions').doc();
 				const position = {
-					userId: uid,
+					userId: walletAddress,
+					walletAddress: walletAddress,
 					marketId: marketId,
 					optionId: optionId,
 					optionLabel: option.label,
@@ -190,6 +210,7 @@ export const placeBet = onCall<PlaceBetInput>(
 					createdAt: admin.firestore.FieldValue.serverTimestamp(),
 					settled: false,
 					payout: null,
+					cloudFunction: true
 				};
 
 				transaction.set(positionRef, position);
@@ -204,11 +225,15 @@ export const placeBet = onCall<PlaceBetInput>(
 					[volumeField]: admin.firestore.FieldValue.increment(stake),
 				});
 
+				console.log('✅ Transaction prepared successfully');
+
 				return {
 					positionId: positionRef.id,
 					newBalance: newBalance,
 				};
 			});
+
+			console.log('✅ Cloud Function completed successfully:', result);
 
 			return {
 				success: true,
@@ -216,7 +241,7 @@ export const placeBet = onCall<PlaceBetInput>(
 				newBalance: result.newBalance,
 			};
 		} catch (error) {
-			console.error('Error placing bet:', error);
+			console.error('❌ Error placing bet:', error);
 
 			if (error instanceof HttpsError) {
 				throw error;
