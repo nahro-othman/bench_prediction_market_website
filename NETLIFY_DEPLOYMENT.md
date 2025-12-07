@@ -257,3 +257,5 @@ Get your site ID from: **Site settings** → **General** → **Site details**
 Users can connect their MetaMask wallets and start betting with AVAX on Avalanche!
 
 
+
+

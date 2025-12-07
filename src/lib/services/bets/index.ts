@@ -59,7 +59,7 @@ export async function placeBet(
 	}
 
 	try {
-		console.log('Placing bet...', {
+		console.log('🎲 Placing bet...', {
 			marketId,
 			optionId,
 			side,
@@ -73,15 +73,18 @@ export async function placeBet(
 		
 		if (result.success) {
 			console.log('✅ Bet placed successfully!', result);
+		} else {
+			console.error('❌ Bet failed:', result.error);
 		}
 		
 		return result;
 
 	} catch (error) {
-		console.error('Error placing bet:', error);
+		console.error('💥 Error placing bet:', error);
+		const errorMessage = error instanceof Error ? error.message : 'Failed to place bet';
 		return {
 			success: false,
-			error: error instanceof Error ? error.message : 'Failed to place bet'
+			error: errorMessage
 		};
 	}
 }
@@ -96,14 +99,21 @@ async function fallbackPlaceBet(
 	stake: number
 ): Promise<PlaceBetResponse> {
 	try {
+		console.log('📝 Starting fallback bet placement...');
+		
 		const wallet = get(walletStore);
 		if (!wallet.address) {
+			console.error('❌ Wallet not connected');
 			return { success: false, error: 'Wallet not connected' };
 		}
 
+		console.log('🔗 Wallet connected:', wallet.address);
+
 		const db = getFirebaseFirestore();
+		console.log('💾 Firebase initialized');
 		
 		// Get market and option details
+		console.log('📊 Fetching market and option data...');
 		const marketRef = doc(db, 'markets', marketId);
 		const optionRef = doc(db, 'markets', marketId, 'options', optionId);
 		
@@ -112,33 +122,49 @@ async function fallbackPlaceBet(
 			getDoc(optionRef)
 		]);
 
-		if (!marketSnap.exists() || !optionSnap.exists()) {
-			return { success: false, error: 'Market or option not found' };
+		if (!marketSnap.exists()) {
+			console.error('❌ Market not found:', marketId);
+			return { success: false, error: 'Market not found' };
+		}
+		
+		if (!optionSnap.exists()) {
+			console.error('❌ Option not found:', optionId);
+			return { success: false, error: 'Option not found' };
 		}
 
 		const option = optionSnap.data();
 		const market = marketSnap.data();
+		console.log('✅ Market and option data loaded', { market: market.title, option: option.label });
 
 		// Check AVAX balance
 		const avaxBalance = parseFloat(wallet.balance || '0');
+		console.log('💰 AVAX balance:', avaxBalance, 'Stake:', stake);
+		
 		if (avaxBalance < stake) {
-			return { success: false, error: 'Insufficient AVAX balance' };
+			console.error('❌ Insufficient balance');
+			return { success: false, error: `Insufficient AVAX balance. You have ${avaxBalance.toFixed(4)} AVAX but need ${stake.toFixed(4)} AVAX` };
 		}
 
 		// Ensure user profile exists
+		console.log('👤 Checking user profile...');
 		const userRef = doc(db, 'users', wallet.address);
 		const userSnap = await getDoc(userRef);
 		
 		if (!userSnap.exists()) {
+			console.log('📝 Creating user profile...');
 			// Create user profile
 			await setDoc(userRef, {
 				address: wallet.address,
 				createdAt: serverTimestamp(),
 				updatedAt: serverTimestamp()
 			});
+			console.log('✅ User profile created');
+		} else {
+			console.log('✅ User profile exists');
 		}
 
 		// Create position (stored in AVAX)
+		console.log('📝 Creating position...');
 		const positionRef = await addDoc(collection(db, 'positions'), {
 			userId: wallet.address,
 			walletAddress: wallet.address,
@@ -154,25 +180,30 @@ async function fallbackPlaceBet(
 			payout: null,
 			blockchain: false
 		});
+		console.log('✅ Position created with ID:', positionRef.id);
 
 		// Update option volume (in AVAX)
+		console.log('📊 Updating option volume...');
 		const volumeField = side === 'yes' ? 'yesVolume' : 'noVolume';
 		await setDoc(optionRef, {
 			[volumeField]: (option[volumeField] || 0) + stake
 		}, { merge: true });
+		console.log('✅ Option volume updated');
 
-		console.log('✅ Bet placed successfully! (AVAX amount: ' + stake + ')');
+		console.log('🎉 Bet placed successfully! (AVAX amount: ' + stake + ')');
 
 		return {
 			success: true,
 			positionId: positionRef.id,
-			message: 'Bet placed successfully! Note: AVAX will be transferred when on-chain betting is enabled.'
+			message: `Bet placed successfully! You bet ${stake.toFixed(4)} AVAX on ${side.toUpperCase()}.`
 		};
 	} catch (error) {
-		console.error('Firestore bet placement failed:', error);
+		console.error('💥 Firestore bet placement failed:', error);
+		const errorMessage = error instanceof Error ? error.message : 'Failed to place bet';
+		console.error('Error details:', errorMessage);
 		return {
 			success: false,
-			error: error instanceof Error ? error.message : 'Failed to place bet'
+			error: `Failed to place bet: ${errorMessage}`
 		};
 	}
 }

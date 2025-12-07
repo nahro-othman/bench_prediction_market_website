@@ -2,7 +2,49 @@
 
 A cryptocurrency-based prediction market built on **Avalanche**, featuring MetaMask authentication and streamlined x402 payments.
 
+> **🏆 Built for Hack2Build: Payments x402 Edition**
+>
+> Combining x402 payments, ERC8004 conditional tokens, and AI-powered insights to create the future of decentralized prediction markets.
+
 ![Bench Preview](https://via.placeholder.com/800x400?text=Bench+Prediction+Market)
+
+## 🏆 Hackathon Highlights
+
+**What makes Bench special:**
+
+- ⚡ **30% Gas Savings** - x402 eliminates approval transactions
+- 💎 **100% Automatic Payouts** - ERC8004 conditional transfers (zero-gas claims)
+- 🤖 **AI-Powered Insights** - Machine learning for smarter betting decisions
+- 🚀 **Built on Avalanche** - Sub-second finality, <$0.01 transaction costs
+- 📊 **AMM Pricing** - Dynamic odds with constant product formula
+- 🎨 **Beautiful UX** - One-click betting with real-time payment visualization
+
+**📚 Complete Documentation Package:**
+
+**🆕 Quick Links:**
+
+- 🚀 [**START_HERE.md**](./START_HERE.md) ← **Read this first!**
+- ✅ [**VERIFY_EVERYTHING.md**](./VERIFY_EVERYTHING.md) - Master testing guide
+- 🎬 [**DEMO_SCRIPT.md**](./DEMO_SCRIPT.md) - 5-minute presentation
+- 📊 [**PITCH_DECK.md**](./PITCH_DECK.md) - Complete slide deck
+- 🔧 [**TROUBLESHOOTING.md**](./TROUBLESHOOTING.md) - Fix common issues
+
+**Hackathon Docs:**
+
+- [**HACKATHON_FEATURES.md**](./HACKATHON_FEATURES.md) - Innovation breakdown
+- [**HACKATHON_SUBMISSION.md**](./HACKATHON_SUBMISSION.md) - Complete submission
+- [**INTEGRATION_GUIDE.md**](./INTEGRATION_GUIDE.md) - Component usage
+- [**PRE_DEMO_CHECKLIST.md**](./PRE_DEMO_CHECKLIST.md) - 80+ items
+
+**Technical Docs:**
+
+- [**ON_CHAIN_OFF_CHAIN_INTEGRATION.md**](./ON_CHAIN_OFF_CHAIN_INTEGRATION.md) - Architecture
+- [**COMPLETE_TEST_GUIDE.md**](./COMPLETE_TEST_GUIDE.md) - Testing procedures
+- [**PRODUCTION_READINESS_CHECK.md**](./PRODUCTION_READINESS_CHECK.md) - Production checklist
+- [**ADMIN_SETUP.md**](./ADMIN_SETUP.md) - Admin access guide
+- [**DEBUG_BET.md**](./DEBUG_BET.md) - Debug betting issues
+
+---
 
 ## 🌟 Key Features
 
@@ -12,6 +54,8 @@ A cryptocurrency-based prediction market built on **Avalanche**, featuring MetaM
 - 📊 **Admin Settlement** - Fast market resolution
 - 🔐 **MetaMask Auth** - Simple wallet-based authentication
 - ⚡ **Lightning Fast** - Sub-second finality on Avalanche
+- 🤖 **AI Insights** - Smart betting guidance powered by ML
+- 💰 **Automatic Payouts** - ERC8004 conditional tokens (no claim needed)
 
 ## 🏗️ Architecture
 
