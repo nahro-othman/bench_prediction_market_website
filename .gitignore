@@ -18,6 +18,9 @@ build/
 .DS_Store
 Thumbs.db
 
+# Firebase Admin SDK
+bench-prediction-market-firebase-adminsdk-fbsvc-783041869a.json
+
 # Firebase
 functions/node_modules/
 functions/lib/
