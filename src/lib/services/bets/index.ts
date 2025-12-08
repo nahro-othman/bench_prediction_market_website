@@ -249,7 +249,7 @@ async function placeBlockchainBet(
 		if (avaxBalance < stake) {
 			return { 
 				success: false, 
-				error: `Insufficient AVAX balance. You have ${avaxBalance.toFixed(4)} AVAX but need ${stake.toFixed(4)} AVAX` 
+				error: `Insufficient AVAX balance. You have ${avaxBalance.toFixed(2)} AVAX but need ${stake.toFixed(2)} AVAX` 
 			};
 		}
 
@@ -390,7 +390,7 @@ async function fallbackPlaceBet(
 		
 		if (avaxBalance < stake) {
 			console.error('❌ Insufficient balance');
-			return { success: false, error: `Insufficient AVAX balance. You have ${avaxBalance.toFixed(4)} AVAX but need ${stake.toFixed(4)} AVAX` };
+			return { success: false, error: `Insufficient AVAX balance. You have ${avaxBalance.toFixed(2)} AVAX but need ${stake.toFixed(2)} AVAX` };
 		}
 
 		// Ensure user profile exists
@@ -444,7 +444,7 @@ async function fallbackPlaceBet(
 		return {
 			success: true,
 			positionId: positionRef.id,
-			message: `Bet placed successfully! You bet ${stake.toFixed(4)} AVAX on ${side.toUpperCase()}. (Dev mode: no blockchain transaction)`
+			message: `Bet placed successfully! You bet ${stake.toFixed(2)} AVAX on ${side.toUpperCase()}. (Dev mode: no blockchain transaction)`
 		};
 	} catch (error) {
 		console.error('💥 Firestore bet placement failed:', error);

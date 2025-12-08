@@ -129,10 +129,36 @@ export async function connectWallet(): Promise<string> {
 	try {
 		const ethereum = (window as any).ethereum;
 		
-		// Request account access
-		const accounts = await ethereum.request({ 
-			method: 'eth_requestAccounts' 
-		});
+		// MetaMask compatibility fix - ensure provider is ready
+		if (ethereum && ethereum.on) {
+			// Remove any existing listeners to prevent duplicates
+			try {
+				ethereum.removeAllListeners?.();
+			} catch (e) {
+				// Ignore errors from removeAllListeners
+			}
+		}
+
+		// Request account access with retry logic
+		let accounts: string[] = [];
+		let retries = 3;
+		
+		while (retries > 0 && accounts.length === 0) {
+			try {
+				accounts = await ethereum.request({ 
+					method: 'eth_requestAccounts' 
+				});
+				break;
+			} catch (err: any) {
+				if (err.code === 4001) {
+					// User rejected request
+					throw new Error('Please approve the connection request in MetaMask');
+				}
+				retries--;
+				if (retries === 0) throw err;
+				await new Promise(resolve => setTimeout(resolve, 500));
+			}
+		}
 		
 		if (!accounts || accounts.length === 0) {
 			throw new Error('No accounts found');
@@ -146,9 +172,23 @@ export async function connectWallet(): Promise<string> {
 			await switchToAvalanche();
 		}
 
+		// Create provider with compatibility options
+		let provider: ethers.BrowserProvider;
+		let signer: ethers.Signer;
+		
+		try {
+			// Use BrowserProvider with polling for better compatibility
+			provider = new ethers.BrowserProvider(ethereum, 'any');
+			signer = await provider.getSigner();
+		} catch (providerError) {
+			console.warn('Provider creation failed, retrying...', providerError);
+			// Retry with a fresh provider instance
+			await new Promise(resolve => setTimeout(resolve, 1000));
+			provider = new ethers.BrowserProvider(ethereum, 'any');
+			signer = await provider.getSigner();
+		}
+
 		// Get balance
-		const provider = new ethers.BrowserProvider(ethereum);
-		const signer = await provider.getSigner();
 		const balance = await provider.getBalance(address);
 		const formattedBalance = ethers.formatEther(balance);
 		const chainId = await getCurrentChainId();
@@ -164,13 +204,21 @@ export async function connectWallet(): Promise<string> {
 			signer
 		});
 
-		// Authenticate with Firebase (needed for Cloud Functions)
-		await authenticateWithFirebase(address);
+		// Create or update user profile in Firestore (no Firebase Auth needed)
+		await createOrUpdateUser(address);
 
 		return address;
 	} catch (error: any) {
 		console.error('Error connecting wallet:', error);
-		throw new Error(error.message || 'Failed to connect wallet');
+		
+		// Provide user-friendly error messages
+		if (error.message?.includes('User rejected') || error.code === 4001) {
+			throw new Error('Please approve the connection request in MetaMask');
+		} else if (error.message?.includes('addListener')) {
+			throw new Error('MetaMask compatibility issue. Please refresh the page and try again.');
+		} else {
+			throw new Error(error.message || 'Failed to connect wallet. Please try again.');
+		}
 	}
 }
 
@@ -205,30 +253,6 @@ export async function signMessage(message: string): Promise<string> {
 	const signer = await provider.getSigner();
 	
 	return await signer.signMessage(message);
-}
-
-/**
- * Authenticate with Firebase (needed for Cloud Functions to work)
- * Signs in anonymously and links to wallet address
- */
-async function authenticateWithFirebase(address: string): Promise<void> {
-	try {
-		const auth = getFirebaseAuth();
-		
-		// Sign in anonymously (allows Cloud Functions to work)
-		if (!auth.currentUser) {
-			console.log('🔐 Signing in anonymously to Firebase...');
-			await signInAnonymously(auth);
-			console.log('✅ Firebase auth successful');
-		}
-		
-		// Create or update user profile
-		await createOrUpdateUser(address);
-		
-	} catch (error) {
-		console.error('❌ Firebase authentication failed:', error);
-		// Don't throw - wallet still works, just Cloud Functions might fail
-	}
 }
 
 /**
@@ -277,6 +301,10 @@ export async function autoConnectWallet(): Promise<boolean> {
 
 	try {
 		const ethereum = (window as any).ethereum;
+		
+		// Give MetaMask time to initialize on page load
+		await new Promise(resolve => setTimeout(resolve, 100));
+		
 		const accounts = await ethereum.request({ method: 'eth_accounts' });
 		
 		if (accounts && accounts.length > 0 && accounts[0].toLowerCase() === savedAddress.toLowerCase()) {
@@ -285,6 +313,8 @@ export async function autoConnectWallet(): Promise<boolean> {
 		}
 	} catch (error) {
 		console.error('Error auto-connecting wallet:', error);
+		// Clear saved address if auto-connect fails
+		localStorage.removeItem('walletAddress');
 	}
 	
 	return false;
@@ -298,22 +328,40 @@ export function setupWalletListeners(): void {
 	
 	const ethereum = (window as any).ethereum;
 
-	// Account changed
-	ethereum.on('accountsChanged', async (accounts: string[]) => {
-		if (accounts.length === 0) {
-			// User disconnected
-			disconnectWallet();
-		} else {
-			// User switched account
-			await connectWallet();
+	try {
+		// Remove existing listeners first to prevent duplicates
+		if (ethereum.removeAllListeners) {
+			ethereum.removeAllListeners('accountsChanged');
+			ethereum.removeAllListeners('chainChanged');
 		}
-	});
 
-	// Network changed
-	ethereum.on('chainChanged', async () => {
-		// Reload page when network changes (recommended by MetaMask)
-		window.location.reload();
-	});
+		// Account changed
+		if (ethereum.on) {
+			ethereum.on('accountsChanged', async (accounts: string[]) => {
+				if (accounts.length === 0) {
+					// User disconnected
+					disconnectWallet();
+				} else {
+					// User switched account
+					try {
+						await connectWallet();
+					} catch (error) {
+						console.error('Error reconnecting wallet:', error);
+						disconnectWallet();
+					}
+				}
+			});
+
+			// Network changed
+			ethereum.on('chainChanged', async () => {
+				// Reload page when network changes (recommended by MetaMask)
+				window.location.reload();
+			});
+		}
+	} catch (error) {
+		console.error('Error setting up wallet listeners:', error);
+		// Continue even if listeners fail - don't block the app
+	}
 }
 
 /**

@@ -1,0 +1,25 @@
+rules_version = '2';
+
+// Firebase Storage Security Rules
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Evidence uploads - anyone can upload (wallet-based system)
+    match /evidence/{marketId}/{positionId}/{imageId} {
+      // Anyone can read (for admin review and user viewing their own)
+      allow read: if true;
+      
+      // Allow uploads with validation (no auth required for wallet-based system)
+      // Validate file is an image and under 5MB
+      allow write: if request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+    
+    // Deny all other access by default
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+

@@ -116,7 +116,7 @@
           </div>
           <div class="flex justify-between text-red-600 mt-1">
             <span>Cost (USD)</span>
-            <span class="font-mono">${traditional.usd.toFixed(4)}</span>
+            <span class="font-mono">${traditional.usd.toFixed(2)}</span>
           </div>
         </div>
       </div>
@@ -158,7 +158,7 @@
           </div>
           <div class="flex justify-between text-green-600 mt-1">
             <span>Cost (USD)</span>
-            <span class="font-mono">${x402.usd.toFixed(4)}</span>
+            <span class="font-mono">${x402.usd.toFixed(2)}</span>
           </div>
         </div>
       </div>
@@ -177,7 +177,7 @@
 
     <div class="grid grid-cols-3 gap-4 text-center">
       <div>
-        <p class="text-2xl font-bold">${savings.usd.toFixed(4)}</p>
+        <p class="text-2xl font-bold">${savings.usd.toFixed(2)}</p>
         <p class="text-xs opacity-90">USD Saved</p>
       </div>
       <div>
@@ -325,5 +325,3 @@
     </div>
   </div>
 </div>
-
-

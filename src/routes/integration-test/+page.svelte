@@ -87,7 +87,7 @@
         addResult(
           "AVAX Balance",
           "pass",
-          `Balance: ${balance.toFixed(4)} AVAX`
+          `Balance: ${balance.toFixed(2)} AVAX`
         );
       } else {
         addResult("AVAX Balance", "fail", "No AVAX balance - get from faucet");
@@ -410,5 +410,3 @@
     </div>
   </div>
 </div>
-
-

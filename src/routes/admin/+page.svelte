@@ -5,12 +5,19 @@
 -->
 <script lang="ts">
   import { Collection } from "sveltefire";
-  import { collection, query, orderBy } from "firebase/firestore";
+  import {
+    collection,
+    query,
+    orderBy,
+    where,
+    getDocs,
+  } from "firebase/firestore";
   import { getFirebaseFirestore } from "$lib/firebase";
   import { createMarket, settleMarket, closeMarket } from "$lib/services";
   import { browser } from "$app/environment";
   import { walletStore } from "$lib/services/web3/auth";
   import type { CreateMarketInput } from "$lib/types";
+  import { onMount } from "svelte";
 
   const firestore = browser ? getFirebaseFirestore() : null;
 
@@ -31,6 +38,98 @@
   let settlingMarketId = $state<string | null>(null);
   let selectedWinningOption = $state<string | null>(null);
   let settleLoading = $state(false);
+
+  // Evidence photos state
+  let evidencePhotos = $state<any[]>([]);
+  let isLoadingEvidence = $state(false);
+  let selectedMarketFilter = $state<string>("all");
+
+  onMount(() => {
+    if (browser) {
+      loadEvidencePhotos();
+    }
+  });
+
+  async function loadEvidencePhotos() {
+    if (!browser) return;
+
+    isLoadingEvidence = true;
+    try {
+      const db = getFirebaseFirestore();
+      const positionsRef = collection(db, "positions");
+      const q = query(positionsRef, where("evidenceImages", "!=", null));
+
+      const snapshot = await getDocs(q);
+      const photos: any[] = [];
+
+      snapshot.docs.forEach((doc) => {
+        const data = doc.data();
+        if (data.evidenceImages && data.evidenceImages.length > 0) {
+          data.evidenceImages.forEach((imageUrl: string) => {
+            photos.push({
+              id: doc.id,
+              imageUrl,
+              marketId: data.marketId,
+              marketTitle: data.marketTitle || "Unknown Market",
+              walletAddress: data.walletAddress,
+              optionLabel: data.optionLabel || "Unknown Option",
+              side: data.side,
+              stake: data.stake,
+              createdAt: data.createdAt,
+              uploadedAt: data.lastUpdated || data.createdAt,
+            });
+          });
+        }
+      });
+
+      // Sort by upload time (newest first)
+      photos.sort((a, b) => {
+        const aTime = a.uploadedAt?.toDate?.() || new Date(0);
+        const bTime = b.uploadedAt?.toDate?.() || new Date(0);
+        return bTime.getTime() - aTime.getTime();
+      });
+
+      evidencePhotos = photos;
+    } catch (error) {
+      console.error("Error loading evidence photos:", error);
+    } finally {
+      isLoadingEvidence = false;
+    }
+  }
+
+  function truncateAddress(address: string): string {
+    if (!address) return "Unknown";
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  }
+
+  function formatEvidenceDate(timestamp: any): string {
+    if (!timestamp) return "Unknown";
+    const date = timestamp.toDate?.() || new Date(timestamp);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  let filteredPhotos = $derived(
+    selectedMarketFilter === "all"
+      ? evidencePhotos
+      : evidencePhotos.filter((p) => p.marketId === selectedMarketFilter)
+  );
+
+  let uniqueMarkets = $derived(
+    Array.from(new Set(evidencePhotos.map((p) => p.marketId))).map(
+      (marketId) => ({
+        id: marketId,
+        title:
+          evidencePhotos.find((p) => p.marketId === marketId)?.marketTitle ||
+          "Unknown",
+      })
+    )
+  );
 
   function formatDate(timestamp: any): string {
     if (!timestamp) return "";
@@ -291,6 +390,251 @@
           </form>
         </section>
       {/if}
+
+      <!-- Evidence Photos Section -->
+      <section class="mb-8">
+        <div
+          class="bg-white rounded-xl shadow-sm border border-surface-100 p-6"
+        >
+          <div class="flex items-center justify-between mb-6">
+            <div>
+              <h2
+                class="text-xl font-bold text-surface-900 flex items-center gap-2"
+              >
+                <svg
+                  class="w-6 h-6 text-brand-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+                Evidence Photos
+              </h2>
+              <p class="text-sm text-surface-500 mt-1">
+                {evidencePhotos.length}
+                {evidencePhotos.length === 1 ? "photo" : "photos"} uploaded by users
+              </p>
+            </div>
+            <button
+              onclick={() => loadEvidencePhotos()}
+              class="px-4 py-2 text-sm font-medium text-brand-600 hover:bg-brand-50 rounded-lg transition-colors flex items-center gap-2"
+            >
+              <svg
+                class="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+              Refresh
+            </button>
+          </div>
+
+          <!-- Market Filter -->
+          {#if uniqueMarkets.length > 1}
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-surface-700 mb-2"
+                >Filter by Market:</label
+              >
+              <select
+                bind:value={selectedMarketFilter}
+                class="w-full sm:w-auto px-4 py-2 border border-surface-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
+              >
+                <option value="all"
+                  >All Markets ({evidencePhotos.length})</option
+                >
+                {#each uniqueMarkets as market}
+                  {@const count = evidencePhotos.filter(
+                    (p) => p.marketId === market.id
+                  ).length}
+                  <option value={market.id}>{market.title} ({count})</option>
+                {/each}
+              </select>
+            </div>
+          {/if}
+
+          {#if isLoadingEvidence}
+            <div class="text-center py-12">
+              <div
+                class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"
+              ></div>
+              <p class="text-sm text-surface-500 mt-2">Loading evidence...</p>
+            </div>
+          {:else if filteredPhotos.length === 0}
+            <div class="text-center py-12 text-surface-400">
+              <svg
+                class="w-16 h-16 mx-auto mb-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.5"
+                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+              <p class="text-lg font-medium text-surface-600">
+                No evidence photos yet
+              </p>
+              <p class="text-sm text-surface-500 mt-1">
+                Users can upload evidence after placing bets
+              </p>
+            </div>
+          {:else}
+            <!-- Photos Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {#each filteredPhotos as photo}
+                <div
+                  class="bg-surface-50 rounded-lg overflow-hidden border border-surface-200 hover:shadow-md transition-shadow"
+                >
+                  <!-- Image -->
+                  <div class="aspect-video bg-surface-200 relative group">
+                    <img
+                      src={photo.imageUrl}
+                      alt="Evidence"
+                      class="w-full h-full object-cover"
+                    />
+                    <a
+                      href={photo.imageUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
+                    >
+                      <svg
+                        class="w-8 h-8 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"
+                        />
+                      </svg>
+                    </a>
+                  </div>
+
+                  <!-- Details -->
+                  <div class="p-4">
+                    <h3 class="font-semibold text-surface-900 mb-2 truncate">
+                      <a
+                        href="/markets/{photo.marketId}"
+                        class="hover:text-brand-600"
+                      >
+                        {photo.marketTitle}
+                      </a>
+                    </h3>
+
+                    <div class="space-y-2 text-sm">
+                      <div class="flex items-center gap-2">
+                        <svg
+                          class="w-4 h-4 text-surface-400 flex-shrink-0"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                          />
+                        </svg>
+                        <span
+                          class="text-surface-600 font-mono text-xs truncate"
+                          >{truncateAddress(photo.walletAddress)}</span
+                        >
+                      </div>
+
+                      <div class="flex items-center gap-2">
+                        <svg
+                          class="w-4 h-4 text-surface-400 flex-shrink-0"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+                          />
+                        </svg>
+                        <span class="text-surface-600 truncate"
+                          >{photo.optionLabel}</span
+                        >
+                        <span
+                          class={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${
+                            photo.side === "yes"
+                              ? "bg-yes-light text-yes-dark"
+                              : "bg-no-light text-no-dark"
+                          }`}
+                        >
+                          {photo.side?.toUpperCase()}
+                        </span>
+                      </div>
+
+                      <div class="flex items-center gap-2">
+                        <svg
+                          class="w-4 h-4 text-surface-400 flex-shrink-0"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                        <span class="text-surface-600">{photo.stake} AVAX</span>
+                      </div>
+
+                      <div
+                        class="flex items-center gap-2 text-xs text-surface-500"
+                      >
+                        <svg
+                          class="w-4 h-4 flex-shrink-0"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                        <span class="truncate"
+                          >{formatEvidenceDate(photo.uploadedAt)}</span
+                        >
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              {/each}
+            </div>
+          {/if}
+        </div>
+      </section>
 
       <!-- Markets list -->
       <section>

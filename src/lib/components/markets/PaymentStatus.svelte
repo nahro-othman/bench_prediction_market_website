@@ -94,7 +94,7 @@
           {getStatusText(status)}
         </h3>
         <p class="text-gray-600">
-          Processing {amount} credits via x402
+          Processing {amount} AVAX via x402
         </p>
       </div>
 
@@ -244,5 +244,3 @@
     animation: shimmer 1.5s infinite;
   }
 </style>
-
-

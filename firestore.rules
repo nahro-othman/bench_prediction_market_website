@@ -16,19 +16,20 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Markets collection - PUBLIC READ
+    // Markets collection - PUBLIC READ, ALLOW WRITES FOR ADMIN
     // Anyone can read markets (no auth required)
     match /markets/{marketId} {
       // Public read access
       allow read: if true;
       
-      // Only Cloud Functions can write (via service account)
-      allow write: if false;
+      // Allow writes for market creation/updates
+      // TODO: Add admin authentication check in production
+      allow write: if true;
       
-      // Options subcollection - PUBLIC READ
+      // Options subcollection - PUBLIC READ, ALLOW WRITES
       match /options/{optionId} {
         allow read: if true;
-        allow write: if false;
+        allow write: if true;
       }
     }
     
@@ -46,7 +47,7 @@ service cloud.firestore {
     // Positions collection - PUBLIC READ, ALLOW CREATE
     // Users can read their own positions
     // Users can CREATE positions (after blockchain transaction)
-    // Only Cloud Functions can update/delete
+    // Users can UPDATE their own positions ONLY for evidence images
     match /positions/{positionId} {
       // Anyone can read (filter by userId client-side)
       allow read: if true;
@@ -54,8 +55,12 @@ service cloud.firestore {
       // Allow position creation from frontend (for blockchain bets)
       allow create: if true;
       
-      // Only Cloud Functions can update/delete
-      allow update, delete: if false;
+      // Allow users to update ONLY evidenceImages and lastUpdated fields
+      allow update: if request.resource.data.diff(resource.data).affectedKeys()
+        .hasOnly(['evidenceImages', 'lastUpdated']);
+      
+      // Only Cloud Functions can delete
+      allow delete: if false;
     }
     
     // Admins collection - PUBLIC READ

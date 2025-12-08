@@ -35,7 +35,7 @@
       <footer class="bg-white border-t border-surface-200 py-8 mt-auto">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div
-            class="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0"
+            class="flex flex-col items-center justify-center space-y-2 text-center"
           >
             <div class="flex items-center space-x-2">
               <div
@@ -47,7 +47,7 @@
                 >© 2024 Bench. Demo prediction market.</span
               >
             </div>
-            <div class="flex space-x-6 text-sm text-surface-500">
+            <div class="text-sm text-surface-500">
               <span>Football predictions made fun</span>
             </div>
           </div>
@@ -63,7 +63,7 @@
     <footer class="bg-white border-t border-surface-200 py-8 mt-auto">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div
-          class="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0"
+          class="flex flex-col items-center justify-center space-y-2 text-center"
         >
           <div class="flex items-center space-x-2">
             <div
@@ -74,6 +74,9 @@
             <span class="text-sm text-surface-500"
               >© 2025 Bench. prediction market.</span
             >
+          </div>
+          <div class="text-sm text-surface-500">
+            <span>Football predictions made fun</span>
           </div>
         </div>
       </div>

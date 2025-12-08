@@ -107,3 +107,5 @@ async function syncMarkets() {
 
 // Run it
 syncMarkets();
+
+

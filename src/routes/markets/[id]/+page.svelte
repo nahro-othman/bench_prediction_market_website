@@ -9,7 +9,12 @@
   import { collection } from "firebase/firestore";
   import { getFirebaseFirestore } from "$lib/firebase";
   import { browser } from "$app/environment";
-  import { OptionRow, BetDialog, BettingActivityChart } from "$lib/components";
+  import {
+    OptionRow,
+    BetDialog,
+    BettingActivityChart,
+    EvidenceUpload,
+  } from "$lib/components";
   import { placeBet } from "$lib/services/bets";
   import { walletStore } from "$lib/services/web3/auth";
   import type { MarketOption, BetSide } from "$lib/types";
@@ -264,11 +269,6 @@
               </svg>
               <span>Created {formatDate(market.createdAt)}</span>
             </div>
-            <span
-              class="px-2 py-0.5 rounded-full bg-surface-100 text-surface-600 capitalize"
-            >
-              {market.sport}
-            </span>
           </div>
         </header>
 
@@ -337,6 +337,13 @@
               <BettingActivityChart {marketId} options={options || []} />
             </section>
           </Collection>
+        {/if}
+
+        <!-- Evidence Upload (for participants only) -->
+        {#if browser}
+          <section class="mt-6">
+            <EvidenceUpload {marketId} marketTitle={market.title} />
+          </section>
         {/if}
 
         <!-- Resolution info for settled markets -->

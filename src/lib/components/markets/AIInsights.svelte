@@ -176,7 +176,7 @@
             >
           </div>
           <span class="text-lg font-bold text-purple-600"
-            >{insight.suggestedStake} credits</span
+            >{insight.suggestedStake} AVAX</span
           >
         </div>
       </div>
@@ -207,5 +207,3 @@
     animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 </style>
-
-

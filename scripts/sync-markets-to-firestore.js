@@ -122,3 +122,5 @@ syncMarkets()
     console.error("❌ Error:", error);
     process.exit(1);
   });
+
+
