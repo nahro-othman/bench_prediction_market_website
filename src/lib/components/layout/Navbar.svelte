@@ -12,8 +12,10 @@
     disconnectWallet,
     autoConnectWallet,
   } from "$lib/services/web3/auth";
+  import WalletConnectDialog from "../auth/WalletConnectDialog.svelte";
 
   let isMenuOpen = $state(false);
+  let showWalletDialog = $state(false);
 
   onMount(async () => {
     if (browser) {
@@ -141,7 +143,11 @@
                   class="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg py-1 z-50 border border-surface-200"
                 >
                   <div class="px-4 py-3 border-b border-surface-100">
-                    <p class="text-xs text-surface-500 mb-1">Wallet Address</p>
+                    <p class="text-xs text-surface-500 mb-1">
+                      {$walletStore.walletType === "core"
+                        ? "Core Wallet"
+                        : "MetaMask"} Address
+                    </p>
                     <p class="text-sm font-mono text-surface-900 truncate">
                       {$walletStore.address}
                     </p>
@@ -233,12 +239,12 @@
         {:else}
           <!-- Not connected: show connect button -->
           <div class="flex items-center space-x-3">
-            <a
-              href="/login"
+            <button
+              onclick={() => (showWalletDialog = true)}
               class="btn bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-white px-6 py-2 rounded-lg font-semibold text-sm shadow-md hover:shadow-lg transition-all"
             >
               Connect Wallet
-            </a>
+            </button>
           </div>
         {/if}
       </div>
@@ -254,3 +260,9 @@
     aria-label="Close menu"
   ></button>
 {/if}
+
+<!-- Wallet Connect Dialog -->
+<WalletConnectDialog
+  bind:isOpen={showWalletDialog}
+  onClose={() => (showWalletDialog = false)}
+/>

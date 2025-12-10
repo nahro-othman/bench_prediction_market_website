@@ -1,7 +1,7 @@
 /**
  * Web3 Authentication Service
  * 
- * Handles MetaMask wallet connection and authentication
+ * Handles MetaMask and Core wallet connection and authentication
  * for the Avalanche-based prediction market
  */
 
@@ -10,6 +10,9 @@ import { writable, get } from 'svelte/store';
 import { getFirebaseFirestore, getFirebaseAuth } from '$lib/firebase';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { signInAnonymously } from 'firebase/auth';
+
+// Wallet Types
+export type WalletType = 'metamask' | 'core';
 
 // Avalanche Network Configuration
 export const AVALANCHE_NETWORKS = {
@@ -49,6 +52,7 @@ export const walletStore = writable<{
 	isCorrectNetwork: boolean;
 	provider: any | null;
 	signer: any | null;
+	walletType: WalletType | null;
 }>({
 	address: null,
 	balance: null,
@@ -56,23 +60,91 @@ export const walletStore = writable<{
 	isConnected: false,
 	isCorrectNetwork: false,
 	provider: null,
-	signer: null
+	signer: null,
+	walletType: null
 });
+
+/**
+ * Get the wallet provider based on type
+ */
+function getWalletProvider(walletType: WalletType): any {
+	if (typeof window === 'undefined') return null;
+	
+	if (walletType === 'core') {
+		// Core wallet uses window.avalanche
+		return (window as any).avalanche;
+	} else {
+		// MetaMask - need to handle multiple wallet scenario
+		const ethereum = (window as any).ethereum;
+		
+		if (!ethereum) return null;
+		
+		// If multiple wallets are installed, ethereum.providers will be an array
+		if (ethereum.providers) {
+			// Find MetaMask in the providers array
+			const metamaskProvider = ethereum.providers.find((p: any) => p.isMetaMask && !p.isAvalanche);
+			if (metamaskProvider) return metamaskProvider;
+			
+			// Fallback to first MetaMask provider
+			const anyMetaMask = ethereum.providers.find((p: any) => p.isMetaMask);
+			if (anyMetaMask) return anyMetaMask;
+		}
+		
+		// Single wallet case - check if it's MetaMask
+		if (ethereum.isMetaMask && !ethereum.isAvalanche) {
+			return ethereum;
+		}
+		
+		// If Core is overriding, still return ethereum as fallback
+		return ethereum;
+	}
+}
 
 /**
  * Check if MetaMask is installed
  */
 export function isMetaMaskInstalled(): boolean {
 	if (typeof window === 'undefined') return false;
-	return typeof (window as any).ethereum !== 'undefined';
+	
+	const ethereum = (window as any).ethereum;
+	if (!ethereum) return false;
+	
+	// Check if ethereum.providers exists (multiple wallets)
+	if (ethereum.providers) {
+		return ethereum.providers.some((p: any) => p.isMetaMask);
+	}
+	
+	// Single wallet
+	return ethereum.isMetaMask === true;
+}
+
+/**
+ * Check if Core wallet is installed
+ */
+export function isCoreWalletInstalled(): boolean {
+	if (typeof window === 'undefined') return false;
+	
+	// Core wallet primarily uses window.avalanche
+	const avalanche = (window as any).avalanche;
+	if (avalanche) return true;
+	
+	// Also check if ethereum has Core's identifier
+	const ethereum = (window as any).ethereum;
+	if (!ethereum) return false;
+	
+	if (ethereum.providers) {
+		return ethereum.providers.some((p: any) => p.isAvalanche);
+	}
+	
+	return ethereum.isAvalanche === true;
 }
 
 /**
  * Get the current chain ID
  */
-async function getCurrentChainId(): Promise<number> {
-	if (!isMetaMaskInstalled()) throw new Error('MetaMask not installed');
-	const ethereum = (window as any).ethereum;
+async function getCurrentChainId(provider?: any): Promise<number> {
+	const ethereum = provider || (window as any).ethereum || (window as any).avalanche;
+	if (!ethereum) throw new Error('No wallet provider found');
 	const chainId = await ethereum.request({ method: 'eth_chainId' });
 	return parseInt(chainId, 16);
 }
@@ -80,8 +152,8 @@ async function getCurrentChainId(): Promise<number> {
 /**
  * Check if connected to correct Avalanche network
  */
-async function isCorrectNetwork(): Promise<boolean> {
-	const chainId = await getCurrentChainId();
+async function isCorrectNetwork(provider?: any): Promise<boolean> {
+	const chainId = await getCurrentChainId(provider);
 	const targetChainId = parseInt(AVALANCHE_NETWORKS[CURRENT_NETWORK].chainId, 16);
 	return chainId === targetChainId;
 }
@@ -89,28 +161,28 @@ async function isCorrectNetwork(): Promise<boolean> {
 /**
  * Switch to Avalanche network
  */
-export async function switchToAvalanche(): Promise<void> {
-	if (!isMetaMaskInstalled()) throw new Error('MetaMask not installed');
+export async function switchToAvalanche(walletType?: WalletType): Promise<void> {
+	const provider = walletType ? getWalletProvider(walletType) : ((window as any).ethereum || (window as any).avalanche);
+	if (!provider) throw new Error('No wallet provider found');
 	
-	const ethereum = (window as any).ethereum;
 	const network = AVALANCHE_NETWORKS[CURRENT_NETWORK];
 
 	try {
 		// Try to switch to the network
-		await ethereum.request({
+		await provider.request({
 			method: 'wallet_switchEthereumChain',
 			params: [{ chainId: network.chainId }]
 		});
 	} catch (switchError: any) {
-		// This error code indicates that the chain has not been added to MetaMask
+		// This error code indicates that the chain has not been added to wallet
 		if (switchError.code === 4902) {
 			try {
-				await ethereum.request({
+				await provider.request({
 					method: 'wallet_addEthereumChain',
 					params: [network]
 				});
 			} catch (addError) {
-				throw new Error('Failed to add Avalanche network to MetaMask');
+				throw new Error(`Failed to add Avalanche network to ${walletType || 'wallet'}`);
 			}
 		} else {
 			throw switchError;
@@ -119,21 +191,29 @@ export async function switchToAvalanche(): Promise<void> {
 }
 
 /**
- * Connect to MetaMask wallet
+ * Connect to wallet (MetaMask or Core)
  */
-export async function connectWallet(): Promise<string> {
-	if (!isMetaMaskInstalled()) {
+export async function connectWallet(walletType: WalletType = 'metamask'): Promise<string> {
+	// Check if wallet is installed
+	if (walletType === 'metamask' && !isMetaMaskInstalled()) {
 		throw new Error('MetaMask is not installed. Please install MetaMask to continue.');
+	}
+	if (walletType === 'core' && !isCoreWalletInstalled()) {
+		throw new Error('Core wallet is not installed. Please install Core wallet to continue.');
 	}
 
 	try {
-		const ethereum = (window as any).ethereum;
+		const provider = getWalletProvider(walletType);
 		
-		// MetaMask compatibility fix - ensure provider is ready
-		if (ethereum && ethereum.on) {
+		if (!provider) {
+			throw new Error(`${walletType === 'core' ? 'Core wallet' : 'MetaMask'} provider not found`);
+		}
+		
+		// Wallet compatibility fix - ensure provider is ready
+		if (provider && provider.on) {
 			// Remove any existing listeners to prevent duplicates
 			try {
-				ethereum.removeAllListeners?.();
+				provider.removeAllListeners?.();
 			} catch (e) {
 				// Ignore errors from removeAllListeners
 			}
@@ -145,14 +225,14 @@ export async function connectWallet(): Promise<string> {
 		
 		while (retries > 0 && accounts.length === 0) {
 			try {
-				accounts = await ethereum.request({ 
+				accounts = await provider.request({ 
 					method: 'eth_requestAccounts' 
 				});
 				break;
 			} catch (err: any) {
 				if (err.code === 4001) {
 					// User rejected request
-					throw new Error('Please approve the connection request in MetaMask');
+					throw new Error(`Please approve the connection request in ${walletType === 'core' ? 'Core wallet' : 'MetaMask'}`);
 				}
 				retries--;
 				if (retries === 0) throw err;
@@ -167,31 +247,31 @@ export async function connectWallet(): Promise<string> {
 		const address = accounts[0];
 		
 		// Check network
-		const correctNetwork = await isCorrectNetwork();
+		const correctNetwork = await isCorrectNetwork(provider);
 		if (!correctNetwork) {
-			await switchToAvalanche();
+			await switchToAvalanche(walletType);
 		}
 
 		// Create provider with compatibility options
-		let provider: ethers.BrowserProvider;
+		let ethersProvider: ethers.BrowserProvider;
 		let signer: ethers.Signer;
 		
 		try {
 			// Use BrowserProvider with polling for better compatibility
-			provider = new ethers.BrowserProvider(ethereum, 'any');
-			signer = await provider.getSigner();
+			ethersProvider = new ethers.BrowserProvider(provider, 'any');
+			signer = await ethersProvider.getSigner();
 		} catch (providerError) {
 			console.warn('Provider creation failed, retrying...', providerError);
 			// Retry with a fresh provider instance
 			await new Promise(resolve => setTimeout(resolve, 1000));
-			provider = new ethers.BrowserProvider(ethereum, 'any');
-			signer = await provider.getSigner();
+			ethersProvider = new ethers.BrowserProvider(provider, 'any');
+			signer = await ethersProvider.getSigner();
 		}
 
 		// Get balance
-		const balance = await provider.getBalance(address);
+		const balance = await ethersProvider.getBalance(address);
 		const formattedBalance = ethers.formatEther(balance);
-		const chainId = await getCurrentChainId();
+		const chainId = await getCurrentChainId(provider);
 
 		// Update store
 		walletStore.set({
@@ -200,22 +280,24 @@ export async function connectWallet(): Promise<string> {
 			chainId,
 			isConnected: true,
 			isCorrectNetwork: true,
-			provider,
-			signer
+			provider: ethersProvider,
+			signer,
+			walletType
 		});
 
-		// Create or update user profile in Firestore (no Firebase Auth needed)
-		await createOrUpdateUser(address);
+		// Create or update user profile in Firestore
+		await createOrUpdateUser(address, walletType);
 
 		return address;
 	} catch (error: any) {
 		console.error('Error connecting wallet:', error);
 		
 		// Provide user-friendly error messages
+		const walletName = walletType === 'core' ? 'Core wallet' : 'MetaMask';
 		if (error.message?.includes('User rejected') || error.code === 4001) {
-			throw new Error('Please approve the connection request in MetaMask');
+			throw new Error(`Please approve the connection request in ${walletName}`);
 		} else if (error.message?.includes('addListener')) {
-			throw new Error('MetaMask compatibility issue. Please refresh the page and try again.');
+			throw new Error(`${walletName} compatibility issue. Please refresh the page and try again.`);
 		} else {
 			throw new Error(error.message || 'Failed to connect wallet. Please try again.');
 		}
@@ -233,12 +315,14 @@ export function disconnectWallet(): void {
 		isConnected: false,
 		isCorrectNetwork: false,
 		provider: null,
-		signer: null
+		signer: null,
+		walletType: null
 	});
 	
 	// Clear from localStorage
 	if (typeof window !== 'undefined') {
 		localStorage.removeItem('walletAddress');
+		localStorage.removeItem('walletType');
 	}
 }
 
@@ -246,19 +330,19 @@ export function disconnectWallet(): void {
  * Sign message for authentication
  */
 export async function signMessage(message: string): Promise<string> {
-	if (!isMetaMaskInstalled()) throw new Error('MetaMask not installed');
+	const wallet = get(walletStore);
 	
-	const ethereum = (window as any).ethereum;
-	const provider = new ethers.BrowserProvider(ethereum);
-	const signer = await provider.getSigner();
+	if (!wallet.signer) {
+		throw new Error('No wallet connected');
+	}
 	
-	return await signer.signMessage(message);
+	return await wallet.signer.signMessage(message);
 }
 
 /**
  * Create or update user profile in Firestore
  */
-async function createOrUpdateUser(address: string): Promise<void> {
+async function createOrUpdateUser(address: string, walletType: WalletType): Promise<void> {
 	const firestore = getFirebaseFirestore();
 	const userRef = doc(firestore, 'users', address);
 	
@@ -269,6 +353,7 @@ async function createOrUpdateUser(address: string): Promise<void> {
 		// Create new user with starting balance
 		await setDoc(userRef, {
 			walletAddress: address,
+			walletType,
 			balance: 1000, // Starting balance
 			createdAt: serverTimestamp(),
 			updatedAt: serverTimestamp(),
@@ -277,8 +362,9 @@ async function createOrUpdateUser(address: string): Promise<void> {
 		});
 		console.log('✅ Created user profile with 1000 credits');
 	} else {
-		// Update last login
+		// Update last login and wallet type
 		await setDoc(userRef, {
+			walletType,
 			updatedAt: serverTimestamp()
 		}, { merge: true });
 		console.log('✅ Updated user profile');
@@ -287,6 +373,7 @@ async function createOrUpdateUser(address: string): Promise<void> {
 	// Save to localStorage for persistence
 	if (typeof window !== 'undefined') {
 		localStorage.setItem('walletAddress', address);
+		localStorage.setItem('walletType', walletType);
 	}
 }
 
@@ -297,24 +384,33 @@ export async function autoConnectWallet(): Promise<boolean> {
 	if (typeof window === 'undefined') return false;
 	
 	const savedAddress = localStorage.getItem('walletAddress');
-	if (!savedAddress || !isMetaMaskInstalled()) return false;
+	const savedWalletType = (localStorage.getItem('walletType') as WalletType) || 'metamask';
+	
+	if (!savedAddress) return false;
+	
+	// Check if the saved wallet type is installed
+	if (savedWalletType === 'metamask' && !isMetaMaskInstalled()) return false;
+	if (savedWalletType === 'core' && !isCoreWalletInstalled()) return false;
 
 	try {
-		const ethereum = (window as any).ethereum;
+		const provider = getWalletProvider(savedWalletType);
 		
-		// Give MetaMask time to initialize on page load
+		if (!provider) return false;
+		
+		// Give wallet time to initialize on page load
 		await new Promise(resolve => setTimeout(resolve, 100));
 		
-		const accounts = await ethereum.request({ method: 'eth_accounts' });
+		const accounts = await provider.request({ method: 'eth_accounts' });
 		
 		if (accounts && accounts.length > 0 && accounts[0].toLowerCase() === savedAddress.toLowerCase()) {
-			await connectWallet();
+			await connectWallet(savedWalletType);
 			return true;
 		}
 	} catch (error) {
 		console.error('Error auto-connecting wallet:', error);
-		// Clear saved address if auto-connect fails
+		// Clear saved data if auto-connect fails
 		localStorage.removeItem('walletAddress');
+		localStorage.removeItem('walletType');
 	}
 	
 	return false;
@@ -324,44 +420,66 @@ export async function autoConnectWallet(): Promise<boolean> {
  * Listen for account and network changes
  */
 export function setupWalletListeners(): void {
-	if (typeof window === 'undefined' || !isMetaMaskInstalled()) return;
+	if (typeof window === 'undefined') return;
 	
-	const ethereum = (window as any).ethereum;
-
-	try {
-		// Remove existing listeners first to prevent duplicates
-		if (ethereum.removeAllListeners) {
-			ethereum.removeAllListeners('accountsChanged');
-			ethereum.removeAllListeners('chainChanged');
+	// Setup listeners for both MetaMask and Core wallet
+	const providers = [];
+	
+	if (isMetaMaskInstalled()) {
+		const metamaskProvider = getWalletProvider('metamask');
+		if (metamaskProvider) {
+			providers.push({ type: 'metamask' as WalletType, provider: metamaskProvider });
 		}
-
-		// Account changed
-		if (ethereum.on) {
-			ethereum.on('accountsChanged', async (accounts: string[]) => {
-				if (accounts.length === 0) {
-					// User disconnected
-					disconnectWallet();
-				} else {
-					// User switched account
-					try {
-						await connectWallet();
-					} catch (error) {
-						console.error('Error reconnecting wallet:', error);
-						disconnectWallet();
-					}
-				}
-			});
-
-			// Network changed
-			ethereum.on('chainChanged', async () => {
-				// Reload page when network changes (recommended by MetaMask)
-				window.location.reload();
-			});
-		}
-	} catch (error) {
-		console.error('Error setting up wallet listeners:', error);
-		// Continue even if listeners fail - don't block the app
 	}
+	
+	if (isCoreWalletInstalled()) {
+		const coreProvider = getWalletProvider('core');
+		if (coreProvider) {
+			providers.push({ type: 'core' as WalletType, provider: coreProvider });
+		}
+	}
+	
+	providers.forEach(({ type, provider }) => {
+		try {
+			// Remove existing listeners first to prevent duplicates
+			if (provider.removeAllListeners) {
+				provider.removeAllListeners('accountsChanged');
+				provider.removeAllListeners('chainChanged');
+			}
+
+			// Account changed
+			if (provider.on) {
+				provider.on('accountsChanged', async (accounts: string[]) => {
+					const currentWallet = get(walletStore);
+					
+					// Only handle if this is the currently connected wallet
+					if (currentWallet.walletType !== type) return;
+					
+					if (accounts.length === 0) {
+						// User disconnected
+						disconnectWallet();
+					} else {
+						// User switched account
+						try {
+							await connectWallet(type);
+						} catch (error) {
+							console.error('Error reconnecting wallet:', error);
+							disconnectWallet();
+						}
+					}
+				});
+
+				// Network changed
+				provider.on('chainChanged', async () => {
+					// Reload page when network changes (recommended by wallet providers)
+					window.location.reload();
+				});
+			}
+		} catch (error) {
+			console.error(`Error setting up ${type} listeners:`, error);
+			// Continue even if listeners fail - don't block the app
+		}
+	});
 }
 
 /**

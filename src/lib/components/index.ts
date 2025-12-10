@@ -20,5 +20,6 @@ export { default as EvidenceUpload } from './markets/EvidenceUpload.svelte';
 // Auth components
 export { default as AuthForm } from './auth/AuthForm.svelte';
 export { default as WalletConnect } from './auth/WalletConnect.svelte';
+export { default as WalletConnectDialog } from './auth/WalletConnectDialog.svelte';
 
 

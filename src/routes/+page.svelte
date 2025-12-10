@@ -8,7 +8,7 @@
   import { collection, query, where, orderBy, doc } from "firebase/firestore";
   import { getFirebaseFirestore } from "$lib/firebase";
   import { browser } from "$app/environment";
-  import { MarketCard, BetDialog } from "$lib/components";
+  import { MarketCard, BetDialog, WalletConnectDialog } from "$lib/components";
   import { placeBet } from "$lib/services/bets";
   import type { MarketWithOptions, MarketOption, BetSide } from "$lib/types";
   import { walletStore } from "$lib/services/web3/auth";
@@ -23,6 +23,9 @@
   let selectedSide = $state<BetSide>("yes");
   let betLoading = $state(false);
   let betError = $state("");
+
+  // Wallet connect dialog state
+  let showWalletDialog = $state(false);
 
   function handleBet(
     marketId: string,
@@ -141,7 +144,7 @@
                 {@const marketWithOptions = {
                   ...market,
                   options: options || [],
-                }}
+                } as MarketWithOptions}
                 {#if $walletStore.isConnected && $walletStore.address}
                   <MarketCard
                     market={marketWithOptions}
@@ -160,7 +163,7 @@
                 {:else}
                   <MarketCard
                     market={marketWithOptions}
-                    onBet={() => (window.location.href = "/login")}
+                    onBet={() => (showWalletDialog = true)}
                     disabled={true}
                   />
                 {/if}
@@ -214,3 +217,9 @@
     {betError}
   </div>
 {/if}
+
+<!-- Wallet Connect Dialog -->
+<WalletConnectDialog
+  bind:isOpen={showWalletDialog}
+  onClose={() => (showWalletDialog = false)}
+/>
