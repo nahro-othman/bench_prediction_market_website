@@ -75,7 +75,7 @@
 </script>
 
 <svelte:head>
-  <title>Bench - Football Prediction Market</title>
+  <title>Bench - Information Market</title>
   <meta
     name="description"
     content="Predict football outcomes and compete with friends. Browse markets for World Cup, Premier League, and more."

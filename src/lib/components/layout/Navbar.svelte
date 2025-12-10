@@ -45,12 +45,7 @@
       <div class="flex items-center">
         <!-- Logo -->
         <a href="/" class="flex items-center space-x-2">
-          <div
-            class="w-8 h-8 bg-gradient-to-br from-brand-500 to-brand-700 rounded-lg flex items-center justify-center"
-          >
-            <span class="text-white font-bold text-lg">B</span>
-          </div>
-          <span class="text-xl font-bold text-surface-900">Bench</span>
+          <img src="/Bench%20Logo.svg" alt="Bench Logo" class="h-8 w-auto" />
         </a>
 
         <!-- Desktop nav links -->
