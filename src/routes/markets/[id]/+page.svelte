@@ -14,6 +14,7 @@
     BetDialog,
     BettingActivityChart,
     EvidenceUpload,
+    WalletConnectDialog,
   } from "$lib/components";
   import { placeBet } from "$lib/services/bets";
   import { walletStore } from "$lib/services/web3/auth";
@@ -31,6 +32,9 @@
   let betSuccess = $state("");
   let currentMarket = $state<any>(null);
   let currentOptions = $state<any[]>([]);
+
+  // Wallet connect dialog state
+  let showWalletDialog = $state(false);
 
   function formatDate(timestamp: any): string {
     if (!timestamp) return "";
@@ -279,14 +283,20 @@
           {#if browser && !$walletStore.isConnected}
             <div class="bg-brand-50 rounded-xl p-4 mb-4">
               <p class="text-sm text-brand-700">
-                <a href="/login" class="font-medium underline">Connect wallet</a
+                <button
+                  onclick={() => (showWalletDialog = true)}
+                  class="font-medium underline hover:text-brand-800"
+                  >Connect wallet</button
                 > to place bets on this market.
               </p>
             </div>
           {:else if !browser}
             <div class="bg-brand-50 rounded-xl p-4 mb-4">
               <p class="text-sm text-brand-700">
-                <a href="/login" class="font-medium underline">Connect wallet</a
+                <button
+                  onclick={() => (showWalletDialog = true)}
+                  class="font-medium underline hover:text-brand-800"
+                  >Connect wallet</button
                 > to place bets on this market.
               </p>
             </div>
@@ -439,6 +449,12 @@
     </div>
   </div>
 {/if}
+
+<!-- Wallet Connect Dialog -->
+<WalletConnectDialog
+  bind:isOpen={showWalletDialog}
+  onClose={() => (showWalletDialog = false)}
+/>
 
 <style>
   @keyframes slide-in {

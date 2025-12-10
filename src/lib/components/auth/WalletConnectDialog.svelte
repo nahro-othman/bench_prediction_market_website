@@ -459,24 +459,7 @@
             {:else}
               <span class="inline-flex items-center justify-center gap-3">
                 <!-- Core Wallet Icon -->
-                <svg
-                  class="w-8 h-8"
-                  viewBox="0 0 256 256"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <circle cx="128" cy="128" r="128" fill="black" />
-                  <path
-                    d="M128 32L64 96L128 160L192 96L128 32Z"
-                    fill="#FF4545"
-                  />
-                  <path
-                    d="M64 160L128 224L192 160L128 96L64 160Z"
-                    fill="#FF4545"
-                    fill-opacity="0.7"
-                  />
-                  <circle cx="128" cy="128" r="24" fill="white" />
-                </svg>
+                <img src="/core.svg" alt="Core" class="w-8 h-8" />
                 Core
               </span>
             {/if}
@@ -486,3 +469,4 @@
     </div>
   </div>
 {/if}
+
