@@ -19,7 +19,12 @@
 -->
 <script lang="ts">
   import type { MarketWithOptions, MarketOption, BetSide } from "$lib/types";
-  import { formatProbability, calculatePotentialPayout } from "$lib/utils";
+  import { calculatePotentialPayout } from "$lib/utils";
+  import {
+    calculateProbability,
+    calculatePriceImpact,
+    type AMMPool,
+  } from "$lib/utils/amm";
 
   interface Props {
     isOpen: boolean;
@@ -46,8 +51,45 @@
   let stakeInput = $state("");
   let stake = $derived(parseFloat(stakeInput) || 0);
   let error = $derived(validateStake(stake));
-  let potentialPayout = $derived(
-    option ? calculatePotentialPayout(stake, option.probability, side) : 0
+
+  // Calculate probability from AMM pool if available, otherwise use stored probability
+  const currentProbability = $derived(
+    (() => {
+      if (!option) return 0.5;
+      if (option.ammPool) {
+        const pool: AMMPool = {
+          yesShares: option.ammPool.yesShares,
+          noShares: option.ammPool.noShares,
+          k: option.ammPool.k,
+          liquidity: option.ammPool.liquidity,
+        };
+        return calculateProbability(pool);
+      }
+      return option.probability;
+    })()
+  );
+
+  // Calculate potential payout using AMM if pool exists, otherwise use simple formula
+  const potentialPayout = $derived(
+    (() => {
+      if (!option || stake <= 0) return 0;
+
+      if (option.ammPool) {
+        // Use AMM to calculate shares and payout
+        const pool: AMMPool = {
+          yesShares: option.ammPool.yesShares,
+          noShares: option.ammPool.noShares,
+          k: option.ammPool.k,
+          liquidity: option.ammPool.liquidity,
+        };
+        const impact = calculatePriceImpact(pool, side, stake);
+        // Payout is the shares received (which can be redeemed if outcome wins)
+        return impact.shares;
+      }
+
+      // Fallback to simple probability-based calculation
+      return calculatePotentialPayout(stake, currentProbability, side);
+    })()
   );
 
   function validateStake(value: number): string | null {
@@ -142,9 +184,9 @@
               <p class="font-semibold text-surface-900">{option.label}</p>
             </div>
             <div class="text-right">
-              <p class="text-sm text-surface-500">Probability</p>
+              <p class="text-sm text-surface-500">Liquidity</p>
               <p class="font-semibold text-surface-900">
-                {formatProbability(option.probability)}
+                {(option.initialLiquidity ?? 0).toFixed(2)} AVAX
               </p>
             </div>
           </div>

@@ -28,10 +28,11 @@
   let createLoading = $state(false);
   let formTitle = $state("");
   let formDescription = $state("");
+  let formRules = $state("");
   let formCloseDate = $state("");
   let formOptions = $state([
-    { label: "", probability: 0.5 },
-    { label: "", probability: 0.5 },
+    { label: "", liquidity: 0 },
+    { label: "", liquidity: 0 },
   ]);
 
   // Settle market state
@@ -147,7 +148,7 @@
 
   function addOption() {
     if (formOptions.length < 6) {
-      formOptions = [...formOptions, { label: "", probability: 0.25 }];
+      formOptions = [...formOptions, { label: "", liquidity: 0 }];
     }
   }
 
@@ -167,7 +168,12 @@
         title: formTitle,
         description: formDescription || undefined,
         closeAt: new Date(formCloseDate),
-        options: formOptions.filter((o) => o.label.trim()),
+        options: formOptions
+          .filter((o) => o.label.trim())
+          .map((o) => ({
+            label: o.label,
+            liquidity: o.liquidity || 0,
+          })),
       };
 
       await createMarket(input);
@@ -176,10 +182,11 @@
       showCreateForm = false;
       formTitle = "";
       formDescription = "";
+      formRules = "";
       formCloseDate = "";
       formOptions = [
-        { label: "", probability: 0.5 },
-        { label: "", probability: 0.5 },
+        { label: "", liquidity: 0 },
+        { label: "", liquidity: 0 },
       ];
     } catch (err) {
       console.error("Error creating market:", err);
@@ -307,6 +314,17 @@
             </div>
 
             <div>
+              <label for="rules" class="label">Rules</label>
+              <textarea
+                id="rules"
+                bind:value={formRules}
+                placeholder="Optional rules..."
+                rows="2"
+                class="input"
+              ></textarea>
+            </div>
+
+            <div>
               <label for="closeDate" class="label">Close Date *</label>
               <input
                 type="datetime-local"
@@ -339,18 +357,18 @@
                       aria-label="Option {index + 1} label"
                       class="input flex-1"
                     />
-                    <input
-                      type="number"
-                      bind:value={option.probability}
-                      min="0.01"
-                      max="0.99"
-                      step="0.01"
-                      aria-label="Option {index + 1} probability"
-                      class="input w-24"
-                    />
-                    <span class="text-sm text-surface-500 w-10">
-                      {Math.round(option.probability * 100)}%
-                    </span>
+                    <div class="flex items-center space-x-2">
+                      <input
+                        type="number"
+                        bind:value={option.liquidity}
+                        min="0"
+                        step="0.01"
+                        placeholder="0"
+                        aria-label="Option {index + 1} liquidity"
+                        class="input w-32"
+                      />
+                      <span class="text-sm text-surface-500">AVAX</span>
+                    </div>
                     {#if formOptions.length > 2}
                       <button
                         type="button"
@@ -706,9 +724,9 @@
                               <span
                                 class="text-xs bg-surface-100 px-2 py-1 rounded"
                               >
-                                {option.label}: {formatProbability(
-                                  option.probability
-                                )}
+                                {option.label}: {(
+                                  option.initialLiquidity ?? 0
+                                ).toFixed(2)} AVAX
                               </span>
                             {/each}
                           </div>
@@ -814,7 +832,7 @@
                     >{option.label}</span
                   >
                   <span class="ml-auto text-surface-500"
-                    >{formatProbability(option.probability)}</span
+                    >{(option.initialLiquidity ?? 0).toFixed(2)} AVAX</span
                   >
                 </label>
               {/each}

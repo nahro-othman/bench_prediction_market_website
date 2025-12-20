@@ -18,6 +18,7 @@ import { getFirebaseFirestore, getFirebaseFunctions } from '$lib/firebase';
 import { browser } from '$app/environment';
 import { predictionMarketContract } from '../web3/contracts';
 import { CONTRACTS_DEPLOYED } from '$lib/config';
+import { initializePool, calculateProbability } from '$lib/utils/amm';
 import type {
 	CreateMarketInput,
 	SettleMarketInput,
@@ -71,14 +72,31 @@ export async function createMarket(input: CreateMarketInput): Promise<string> {
 				txHash
 			});
 
-			// 3. Create options subcollection
+			// 3. Create options subcollection with AMM pools
 			const optionsRef = collection(db, 'markets', onChainMarketId, 'options');
+
+			// Calculate default probability (equal distribution if not provided)
+			const defaultProbability = 1 / input.options.length;
 
 			for (let i = 0; i < input.options.length; i++) {
 				const option = input.options[i];
+				const initialLiquidity = option.liquidity ?? 0;
+				
+				// Initialize AMM pool with the provided liquidity
+				const pool = initializePool(initialLiquidity);
+				const calculatedProbability = calculateProbability(pool);
+				
 				await setDoc(doc(optionsRef, i.toString()), {
 					label: option.label,
-					probability: option.probability,
+					probability: option.probability ?? calculatedProbability,
+					initialLiquidity: initialLiquidity,
+					// Store AMM pool state
+					ammPool: {
+						yesShares: pool.yesShares,
+						noShares: pool.noShares,
+						k: pool.k,
+						liquidity: pool.liquidity
+					},
 					yesVolume: 0,
 					noVolume: 0,
 					order: i
@@ -112,14 +130,31 @@ export async function createMarket(input: CreateMarketInput): Promise<string> {
 		const marketDoc = await addDoc(marketsRef, marketData);
 		const marketId = marketDoc.id;
 
-		// Create options subcollection
+		// Create options subcollection with AMM pools
 		const optionsRef = collection(db, 'markets', marketId, 'options');
+
+		// Calculate default probability (equal distribution if not provided)
+		const defaultProbability = 1 / input.options.length;
 
 		for (let i = 0; i < input.options.length; i++) {
 			const option = input.options[i];
+			const initialLiquidity = option.liquidity ?? 0;
+			
+			// Initialize AMM pool with the provided liquidity
+			const pool = initializePool(initialLiquidity);
+			const calculatedProbability = calculateProbability(pool);
+			
 			await addDoc(optionsRef, {
 				label: option.label,
-				probability: option.probability,
+				probability: option.probability ?? calculatedProbability,
+				initialLiquidity: initialLiquidity,
+				// Store AMM pool state
+				ammPool: {
+					yesShares: pool.yesShares,
+					noShares: pool.noShares,
+					k: pool.k,
+					liquidity: pool.liquidity
+				},
 				yesVolume: 0,
 				noVolume: 0,
 				order: i

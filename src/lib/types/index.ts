@@ -64,7 +64,14 @@ export interface MarketOption {
 	id: string;
 	marketId: string;
 	label: string;
-	probability: number; // 0-1, displayed as percentage
+	probability: number; // 0-1, displayed as percentage (calculated from AMM pool)
+	initialLiquidity?: number; // Initial liquidity in AVAX set when creating the market
+	ammPool?: {
+		yesShares: number;
+		noShares: number;
+		k: number;
+		liquidity: number;
+	}; // AMM pool state for dynamic probability calculation
 	yesVolume: number; // Total amount bet on YES
 	noVolume: number; // Total amount bet on NO
 	order: number; // Display order
@@ -157,7 +164,8 @@ export interface CreateMarketInput {
 	closeAt: Date;
 	options: {
 		label: string;
-		probability: number;
+		liquidity?: number; // Initial liquidity in AVAX (optional, defaults to 0)
+		probability?: number; // For backward compatibility, but liquidity is preferred
 	}[];
 }
 

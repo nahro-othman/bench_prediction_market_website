@@ -303,38 +303,46 @@
           {/if}
 
           <!-- Load options -->
-          <Collection
-            ref={collection(firestore, "markets", marketId, "options")}
-            let:data={options}
-          >
-            {@const sortedOptions = [...(options || [])].sort(
-              (a, b) => (a.order || 0) - (b.order || 0)
-            )}
+          {#if marketId && firestore}
+            <Collection
+              ref={collection(firestore, "markets", marketId, "options")}
+              let:data={options}
+            >
+              {@const sortedOptions = [...(options || [])].sort(
+                (a, b) => (a.order || 0) - (b.order || 0)
+              )}
 
-            <div class="divide-y divide-surface-100">
-              {#each sortedOptions as option (option.id)}
-                {#if browser && $walletStore.isConnected}
-                  <OptionRow
-                    option={{ ...option, marketId }}
-                    onBet={(optionId, side) => {
-                      handleBet(
-                        optionId,
-                        side,
-                        sortedOptions.map((o) => ({ ...o, marketId }))
-                      );
-                    }}
-                    disabled={!isOpen}
-                  />
-                {:else}
-                  <OptionRow
-                    option={{ ...option, marketId }}
-                    onBet={() => {}}
-                    disabled={true}
-                  />
-                {/if}
-              {/each}
-            </div>
-          </Collection>
+              {#if sortedOptions.length === 0}
+                <div class="text-center py-8 text-surface-500">
+                  <p>No options available for this market.</p>
+                </div>
+              {:else}
+                <div class="divide-y divide-surface-100">
+                  {#each sortedOptions as option (option.id)}
+                    {#if browser && $walletStore.isConnected}
+                      <OptionRow
+                        option={{ ...option, marketId }}
+                        onBet={(optionId, side) => {
+                          handleBet(
+                            optionId,
+                            side,
+                            sortedOptions.map((o) => ({ ...o, marketId }))
+                          );
+                        }}
+                        disabled={!isOpen}
+                      />
+                    {:else}
+                      <OptionRow
+                        option={{ ...option, marketId }}
+                        onBet={() => {}}
+                        disabled={true}
+                      />
+                    {/if}
+                  {/each}
+                </div>
+              {/if}
+            </Collection>
+          {/if}
         </section>
 
         <!-- Betting Activity Chart -->
